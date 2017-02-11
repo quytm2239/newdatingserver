@@ -1,0 +1,28 @@
+{
+  "name": "dating_server",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "nodemon app.js",
+    "debug": "grunt debug --file=app.js",
+    "build-css": "grunt sass"
+  },
+  "dependencies": {
+    "body-parser": "^1.15.0",
+    "cors": "^2.8.1",
+    "express": "^4.10.6",
+    "jsonwebtoken": "^5.7.0",
+    "mongoose": "^4.4.5",
+    "morgan": "^1.7.0",
+    "mysql": "^2.5.4",
+    "nodemailer": "^3.0.2",
+    "password-hash": "^1.2.2"
+  },
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-sass": "^0.8.1",
+    "grunt-githooks": "^0.3.1",
+    "grunt-run": "^0.2.4",
+    "nodemon": "^1.2.1"
+  }
+}

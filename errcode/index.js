@@ -1,0 +1,94 @@
+module.exports={
+    code_db_error: 1000,
+    code_success: 200,
+    code_null_invalid_email: 2001,
+    code_null_invalid_password: 2002,
+    code_null_invalid_full_name: 2003,
+    code_null_invalid_user_status: 2004,
+    code_null_invalid_gender: 2005,
+    code_null_invalid_avatar: 2006,
+    code_null_invalid_birthday: 2007,
+    code_null_invalid_lat_long: 2008,
+    code_null_invalid_address: 2009,
+    code_null_invalid_phone: 2010,
+    code_null_invalid_profile_description: 2011,
+    code_duplicate_email_login: 2012,
+    code_duplicate_full_name: 2013,
+    code_wrong_old_password: 2014,
+    code_not_exist_email: 2015,
+    code_not_exist_profile: 2016,
+    code_not_exist_status: 2017,
+    code_not_match_password: 2018,
+    code_null_invalid_page_size: 2019,
+    code_null_invalid_page: 2020,
+
+    errorMessage: function (code) {
+    	var mess;
+    	switch (code) {
+    	case module.exports.code_success:
+    		mess = "Sucessfully!";
+    		break;
+    	case module.exports.code_null_invalid_email:
+    		mess = "Email is blank/null or not valid.";
+    		break;
+    	case module.exports.code_null_invalid_password:
+    		mess = "Password is blank/null or not valid.";
+    		break;
+    	case module.exports.code_null_invalid_full_name:
+    		mess = "full_name is blank/null or not valid.";
+    		break;
+    	case module.exports.code_null_invalid_user_status:
+    		mess = "user_status is blank/null or not valid.";
+    		break;
+    	case module.exports.code_null_invalid_gender:
+    		mess = "gender is blank or not valid (number is valid, 0 - Male, 1 - Female).";
+    		break;
+    	case module.exports.code_null_invalid_avatar:
+    		mess = "avatar is blank/null or not valid.";
+    		break;
+    	case module.exports.code_null_invalid_birthday:
+    		mess = "birthday is blank/null or not valid. (yyyy-mm-dd)";
+    		break;
+    	case module.exports.code_null_invalid_lat_long:
+    		mess = "latitude & longitude is blank/null or not valid.";
+    		break;
+    	case module.exports.code_null_invalid_address:
+    		mess = "province is blank/null or not valid.";
+    		break;
+    	case module.exports.code_null_invalid_phone:
+    		mess = "phone is blank/null or not valid.";
+    		break;
+    	case module.exports.code_null_invalid_profile_description:
+    		mess = "profile_description is blank/null or not valid.";
+    		break;
+    	case module.exports.code_duplicate_email_login:
+    		mess = "email_login already exist";
+    		break;
+    	case module.exports.code_duplicate_full_name:
+    		mess = "full_name already exist";
+    		break;
+    	case module.exports.code_wrong_old_password:
+    		mess = "old_password is wrong";
+    		break;
+    	case module.exports.code_not_exist_email:
+    		mess = "email does not exist";
+    		break;
+    	case module.exports.code_not_exist_profile:
+    		mess = "profile does not exist";
+    		break;
+    	case module.exports.code_not_exist_status:
+    		mess = "status does not exist";
+    		break;
+    	case module.exports.code_not_match_password:
+    		mess = "password does not match/wrong password";
+    		break;
+    	case module.exports.code_null_invalid_page_size:
+    		mess = "page_size is blank/null or not valid. (number required)";
+    		break;
+    	case module.exports.code_null_invalid_page:
+    		mess = "page is blank/null or not valid. (number required)";
+    		break;
+    	}
+    	return mess;
+    }
+};
