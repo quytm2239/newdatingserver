@@ -54,7 +54,7 @@ module.exports = function(app, pool, config){
             //----------------------------- save in DB -------------------------
             pool.getConnection(function(err, connection) {
                 if (err) {
-                    res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+                    res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
                     return;
                 }
 
@@ -104,7 +104,7 @@ module.exports = function(app, pool, config){
 		upload(req, res, function(err) {
 			if(err) {
 			  console.log(err);
-			  res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+			  res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 			  return;
 			}
 
@@ -123,7 +123,7 @@ module.exports = function(app, pool, config){
 			//----------------------------- save in DB -------------------------
 			pool.getConnection(function(err, connection) {
 				if (err) {
-					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 					return;
 				}
 				var sqlQuery = '';
@@ -172,7 +172,7 @@ module.exports = function(app, pool, config){
 		//----------------------------- save in DB -------------------------
 		pool.getConnection(function(err, connection) {
 			if (err) {
-				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
 			//------------------- UPDATE USER's PHOTOS ------------------

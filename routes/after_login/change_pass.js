@@ -26,7 +26,7 @@ module.exports = function(app, pool, config){
 
     	pool.getConnection(function(err, connection) {
     		if (err) {
-    			res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+    			res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
     			return;
     		}
     		//------------------------ CHANGE PASSWORD -----------------------------

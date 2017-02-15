@@ -34,7 +34,7 @@ module.exports = function(app, pool, config){
 
 		pool.getConnection(function(err, connection) {
 			if (err) {
-				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
 			connection.query({
@@ -89,7 +89,7 @@ module.exports = function(app, pool, config){
 
 		pool.getConnection(function(err, connection) {
 			if (err) {
-				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
 
@@ -188,7 +188,7 @@ module.exports = function(app, pool, config){
 
 		pool.getConnection(function(err, connection) {
 			if (err) {
-				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
 			connection.query({
@@ -237,7 +237,7 @@ module.exports = function(app, pool, config){
 
 		pool.getConnection(function(err, connection) {
 			if (err) {
-				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
 			// check for who is follower of this profile_id
@@ -247,7 +247,7 @@ module.exports = function(app, pool, config){
 				values: [profile_id]
 			}, function(error, results, fields) {
 				if (error) {
-					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 					return;
 				}
 
@@ -265,7 +265,7 @@ module.exports = function(app, pool, config){
 				}, function(error, results, fields) {
 
 					if (error) {
-						res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+						res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 						return;
 					}
 
@@ -401,7 +401,7 @@ module.exports = function(app, pool, config){
 
 		pool.getConnection(function(err, connection) {
 			if (err) {
-				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
 			// check for who is follower of this profile_id
@@ -411,7 +411,7 @@ module.exports = function(app, pool, config){
 				values: [profile_id]
 			}, function(error, results, fields) {
 				if (error) {
-					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 					return;
 				}
 
@@ -429,7 +429,7 @@ module.exports = function(app, pool, config){
 				}, function(error, results, fields) {
 
 					if (error) {
-						res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+						res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 						return;
 					}
 
@@ -618,7 +618,7 @@ module.exports = function(app, pool, config){
 
 		pool.getConnection(function(err, connection) {
 			if (err) {
-				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
 			connection.query({
@@ -724,7 +724,7 @@ module.exports = function(app, pool, config){
 
 		pool.getConnection(function(err, connection) {
 			if (err) {
-				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
 			connection.query({

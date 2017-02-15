@@ -26,7 +26,7 @@ module.exports = function(app, pool, config){
 
 		pool.getConnection(function(err, connection) {
 			if (err) {
-				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_email,'Error in connection database',[]));
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_email,'Error in database connection',[]));
 				return;
 			}
 
