@@ -70,20 +70,6 @@ module.exports = function(app, pool, config){
 			return;
 		}
 
-		// STEP 4: Validate birthday
-		if (utils.chkObj(birthday) && utils.validateBirthday(birthday) == false)
-		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_birthday,[]));
-			return;
-		}
-
-		// STEP 5: Validate phone
-		if (utils.chkObj(phone) && utils.validatePhone(phone) == false)
-		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_phone,[]));
-			return;
-		}
-
 		// get account_id from request.token
 		var account_id = req.decoded['account']['account_id'];
 
@@ -95,34 +81,23 @@ module.exports = function(app, pool, config){
 
 			//------------------------- UPDATE PROFILE -----------------------------
 			connection.query({
-				sql: 'SELECT * FROM `profile` WHERE `account_id` = ?',
+				sql: 'UPDATE `profile` SET '
+				+ '`user_status`= ?,`phone`= ?,`profile_description`= ?'
+				+ ' WHERE `account_id` = ?',
 				timeout: 1000, // 1s
-				values: [account_id]
-			}, function(error, results, fields) {
+				values:
+				[
+					(utils.chkObj(user_status)) ? user_status 					: '',
+					(utils.chkObj(phone)) ? phone 								: '',
+					(utils.chkObj(profile_description)) ? profile_description 	: '',
+					account_id
+				]
+			}, function (error, results, fields) {
+				connection.release();
 				if (error) {
-					connection.release();
 					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 				} else {
-					connection.query({
-						sql: 'UPDATE `profile` SET '
-						+ '`user_status`= ?,`phone`= ?,`profile_description`= ?'
-						+ ' WHERE `account_id` = ?',
-						timeout: 1000, // 1s
-						values:
-						[
-							(utils.chkObj(user_status)) ? user_status 					: results[0]['user_status'],
-							(utils.chkObj(phone)) ? phone 								: results[0]['phone'],
-							(utils.chkObj(profile_description)) ? profile_description 	: results[0]['profile_description'],
-						 	account_id
-						]
-					}, function (error, results, fields) {
-						connection.release();
-						if (error) {
-							res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
-						} else {
-							res.status(200).send(utils.responseConvention(errcode.code_success,[]));
-						}
-					});
+					res.status(200).send(utils.responseConvention(errcode.code_success,[]));
 				}
 			});
 		});
