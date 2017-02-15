@@ -177,12 +177,12 @@ module.exports = function(app, pool, config){
 			}
 			//------------------- UPDATE USER's PHOTOS ------------------
 			connection.query({
-				sql: 'SELECT * FROM dating.photos WHERE `account_id` = ?',
+				sql: 'SELECT * FROM `photos` WHERE `account_id` = ?',
 				timeout: 2000, // 2s
 				values:[input_acc_id]
 			}, function (error, results, fields) {
 				connection.release();
-				if (error || utils.chkObj(results) == false) {
+				if (error) {
 					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 				} else if (results.length == 0) {
 					res.status(200).send(utils.responseConvention(errcode.code_success,[]));
