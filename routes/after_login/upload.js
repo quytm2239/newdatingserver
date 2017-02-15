@@ -68,11 +68,11 @@ module.exports = function(app, pool, config){
                     if (error) {
                         res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
                     } else {
-                        res.status(200).send(utils.responseConvention(errcode.code_success,
-                            [{
-                                photos : [img_url]
-                            }]
-                        ));
+						res.json({
+							status: errcode.code_success,
+							message: errcode.errorMessage(errcode.code_success),
+							photos: [img_url]
+						});
                     }
                 });
             });
@@ -104,6 +104,7 @@ module.exports = function(app, pool, config){
 		upload(req, res, function(err) {
 			if(err) {
 			  console.log(err);
+			  res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
 			  return;
 			}
 
@@ -133,11 +134,11 @@ module.exports = function(app, pool, config){
 					values:[account_id]
 				}, function (error, results, fields) {
 
-					if (error || utils.chkObj(results) == false) {
+					if (error) {
 						res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
-					} else if (results.length == 0) {
+					} else if (results.length == 0) { // Does not upload photos, yet
 						sqlQuery = 'INSERT INTO `photos`(`img_origin`,`account_id`) VALUES(?,?)';
-					} else {
+					} else {  // Uploaded photos, before
 						sqlQuery = 'UPDATE `photos` SET `img_origin` = ? WHERE `account_id` = ?';
 						img_url_concat = results[0]['img_origin'] + '|' + img_url_concat;
 					}
@@ -150,12 +151,11 @@ module.exports = function(app, pool, config){
 						if (error) {
 							res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 						} else {
-							var array_str = img_url_concat;
-							res.status(200).send(utils.responseConvention(errcode.code_success,
-								[{
-									photos: array_str.split('|')
-								}]
-							));
+							res.status(200).json({
+								status: errcode.code_success,
+								message: errcode.errorMessage(errcode.code_success),
+								photos: img_url_concat.split('|')
+							});
 						}
 					});
 				});
@@ -188,11 +188,11 @@ module.exports = function(app, pool, config){
 					res.status(200).send(utils.responseConvention(errcode.code_success,[]));
 				} else {
 					var array_str = results[0]['img_origin'];
-					res.status(200).send(utils.responseConvention(errcode.code_success,
-						[{
-							photos: array_str.split('|')
-						}]
-					));
+					res.status(200).json({
+						status: errcode.code_success,
+						message: errcode.errorMessage(errcode.code_success),
+						photos: array_str.split('|')
+					});
 				}
 			});
 		});
