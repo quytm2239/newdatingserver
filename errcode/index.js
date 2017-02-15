@@ -21,6 +21,12 @@ module.exports={
     code_not_match_password: 2018,
     code_null_invalid_page_size: 2019,
     code_null_invalid_page: 2020,
+    code_null_invalid_upload_file: 2021,
+    code_null_invalid_followed_profile_id: 2022,
+    code_not_exist_followed_profile_id: 2023,
+    code_not_allow_follow_profile_id: 2024,
+    code_not_allow_follow_unfollow_self: 2025,
+    code_not_allow_unfollow_profile_id: 2026,
 
     errorMessage: function (code) {
     	var mess;
@@ -41,7 +47,7 @@ module.exports={
     		mess = "user_status is blank/null or not valid.";
     		break;
     	case module.exports.code_null_invalid_gender:
-    		mess = "gender is blank or not valid (number is valid, 0 - Male, 1 - Female).";
+    		mess = "gender is blank or not valid (number is valid, 0 - Male, 1 - Female, All - all gender).";
     		break;
     	case module.exports.code_null_invalid_avatar:
     		mess = "avatar is blank/null or not valid.";
@@ -88,7 +94,25 @@ module.exports={
     	case module.exports.code_null_invalid_page:
     		mess = "page is blank/null or not valid. (number required)";
     		break;
-    	}
+        case module.exports.code_null_invalid_upload_file:
+            mess = "upload file is blank/null or not valid.";
+            break;
+        case module.exports.code_null_invalid_followed_profile_id:
+            mess = "followed profile_id is blank/null or not valid.(number required)";
+            break;
+        case module.exports.code_not_exist_followed_profile_id:
+            mess = "followed profile_id does not exist.";
+            break;
+        case module.exports.code_not_allow_follow_profile_id:
+            mess = "you are following this profile.";
+            break;
+        case module.exports.code_not_allow_follow_unfollow_self:
+            mess = "you can not follow/unfollow your profile.";
+            break;
+        case module.exports.code_not_allow_unfollow_profile_id:
+            mess = "you does not follow this profile, can not unfollow.";
+            break;
+        }
     	return mess;
     }
 };

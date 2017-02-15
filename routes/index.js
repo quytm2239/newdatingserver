@@ -17,4 +17,5 @@ module.exports = function(app, pool, config){
 	// after login
 	require(aft_path + '/change_pass')(app, pool, config);
 	require(aft_path + '/profile')(app, pool, config);
+	require(aft_path + '/upload')(app, pool, config);
 };

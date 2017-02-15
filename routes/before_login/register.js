@@ -139,10 +139,10 @@ module.exports = function(app, pool, config){
 						//--------------STEP 1: add to table[account]-------------------
 						var insertedAccountId;
 						connection.query({
-							sql: 'INSERT INTO `account`(`email_login`, `password`, `login_status`)'
-								+ 'VALUES (?,?,?)',
+							sql: 'INSERT INTO `account`(`email_login`, `password`, `login_status`,`password_status`)'
+								+ 'VALUES (?,?,?,?)',
 							timeout: 1000, // 1s
-							values: [email_login, utils.hashPass(password), 0]
+							values: [email_login, utils.hashPass(password), 0, 0]
 						}, function (error, results, fields) {
 
 							if (error) {
@@ -187,6 +187,9 @@ module.exports = function(app, pool, config){
 											}
 											else
 											{
+												var path = app.get('upload_dir')
+												utils.createDir(path,insertedAccountId,'avatar');
+												utils.createDir(path,insertedAccountId,'photos');
 												console.log('Transaction Complete.');
 												res.status(200).send(utils.responseConvention(errcode.code_success,[]));
 												connection.release();

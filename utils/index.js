@@ -5,6 +5,7 @@
 var nodemailer = require('nodemailer');
 var passwordHash = require('password-hash');
 var errcode = require('./../errcode');
+var fs = require("fs");
 
 module.exports =
 {
@@ -46,7 +47,7 @@ module.exports =
     },
     chkObj: function (obj)
     {
-        if ((obj === undefined || obj === null) == false) {
+        if ((obj === undefined || obj === null || obj.length == 0) == false) {
     		return true;
     	}
     	return false;
@@ -147,5 +148,32 @@ module.exports =
     			console.log('Message sent: ' + info.response);
     		};
     	});
+    },
+    createDir: function (base_path,account_id,sub_path) {
+        console.log("Going to create directory in " + base_path + " for account_id: " + account_id);
+        fs.mkdir(base_path + '/' + account_id + '/' + sub_path,function(err){
+           if (err) {
+              return console.error(err);
+           }
+           console.log("Directory created successfully!");
+        });
+    },
+    removeDir: function (base_path,account_id,sub_path) {
+        console.log("Going to remove directory in " + base_path + " for account_id: " + account_id);
+        fs.rmdir(base_path + '/' + account_id + '/' + sub_path,function(err){
+            if (err) {
+                return console.error(err);
+            }
+           console.log("Going to read directory " + base_path);
+
+            fs.readdir(base_path,function(err, files){
+                if (err) {
+                    return console.error(err);
+                }
+                files.forEach( function (file){
+                    console.log( file );
+                });
+            });
+        });
     }
 }

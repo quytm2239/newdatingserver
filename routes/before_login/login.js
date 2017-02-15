@@ -33,7 +33,7 @@ module.exports = function(app, pool, config){
 
 		pool.getConnection(function(err, connection) {
 			if (err) {
-				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,"Error in connection database",[]));
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
 				return;
 			}
 			connection.query({
@@ -41,10 +41,10 @@ module.exports = function(app, pool, config){
 				timeout: 2000, // 2s
 				values: [email_login]
 			}, function(error, results, fields) {
-				connection.release();
 
 				if (error) {
 					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+					connection.release();
 					return;
 				}
 
@@ -55,14 +55,34 @@ module.exports = function(app, pool, config){
 					if (utils.isExactPass(password,results[0]['password']) == false) {
 						res.status(400).send(utils.responseConvention(errcode.code_not_match_password,[]));
 					} else { // match -> create token
-						var token = jwt.sign(results[0], config.super_secret, {
-							expiresIn: 86400 // expires in 24 hours
-						});
-						res.json({
-							status: errcode.code_success,
-							message: errcode.errorMessage(errcode.code_success),
-							data: results,
-							token: token
+						var account_data = results[0];
+						// Get profile
+						connection.query({
+							sql: 'SELECT * FROM `profile` WHERE `account_id` = ?',
+							timeout: 2000, // 2s
+							values: [results[0]['account_id']]
+						}, function(error, results, fields) {
+							connection.release();
+							if (error) {
+								res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+								return;
+							}
+							var tokenData = {
+								'account': account_data,
+								'profile': results[0]
+
+							}
+							console.log(tokenData);
+							var token = jwt.sign(tokenData, config.super_secret, {
+								expiresIn: 86400 // expires in 24 hours
+							});
+
+							res.json({
+								status: errcode.code_success,
+								message: errcode.errorMessage(errcode.code_success),
+								data: account_data,
+								token: token
+							});
 						});
 					}
 				}

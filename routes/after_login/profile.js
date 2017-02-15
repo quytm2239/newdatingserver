@@ -10,11 +10,20 @@ module.exports = function(app, pool, config){
 	var utils = app.get('utils');
 	var errcode = app.get('errcode');
 	app.use(config.api_path,rootRouter);
+
+	// ---------------------------------------------------------
+	// GET PROFILE (this is authenticated)
+	// ---------------------------------------------------------
 	rootRouter.get('/profile', function(req, res) {
 
 		// check header or url parameters or post parameters for token
-		var profile_id = req.body.profile_id || req.param('profile_id') || req.headers['profile_id'];
-		var account_id = req.decoded['account_id'];
+		var profile_id = req.query['profile_id'];
+		var getOtherProfile = false;
+		if (utils.chkObj(profile_id) && isNaN(profile_id) == false)  {
+			getOtherProfile = true
+		}
+
+		var account_id = req.decoded['account']['account_id'];
 		var sqlQuery = '';
 
 		if (utils.chkObj(profile_id)) { // contain profile_id in request
@@ -31,7 +40,7 @@ module.exports = function(app, pool, config){
 			connection.query({
 				sql: sqlQuery,
 				timeout: 1000, // 1s
-				values: [utils.chkObj(profile_id) ? profile_id : account_id]
+				values: [getOtherProfile ? profile_id : account_id]
 			}, function(error, results, fields) {
 				connection.release();
 				if (results.length == 0 || results == null) { // not found record
@@ -46,20 +55,14 @@ module.exports = function(app, pool, config){
 	// ---------------------------------------------------------
 	// UPDATE PROFILE (this is authenticated)
 	// ---------------------------------------------------------
-
-	// http://localhost:1234/api/profile
 	rootRouter.put('/profile', function(req, res) {
 
 		var user_status 		= req.body.user_status;
-		var avatar 				= req.body.avatar;
-		var gender 				= req.body.gender;
-		var birthday 			= req.body.birthday;
 		var phone 				= req.body.phone;
 		var profile_description = req.body.profile_description;
 
 		if (
-			!(utils.chkObj(user_status)) && !(utils.chkObj(avatar)) && !(utils.chkObj(gender))
-			 && !(utils.chkObj(birthday)) && !(utils.chkObj(phone)) && !(utils.chkObj(profile_description))
+			!(utils.chkObj(user_status)) && !(utils.chkObj(phone)) && !(utils.chkObj(profile_description))
 			)
 		{
 			console.log('User does not modify profile, no query!');
@@ -75,57 +78,14 @@ module.exports = function(app, pool, config){
 		}
 
 		// STEP 5: Validate phone
-		if (utils.chkObj(phone) && validatePhone(phone) == false)
+		if (utils.chkObj(phone) && utils.validatePhone(phone) == false)
 		{
 			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_phone,[]));
 			return;
 		}
 
-		/*
-		// STEP 1: Validate status
-		if (utils.chkObj(user_status) && user_status == '')
-		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_user_status,[]));
-			return;
-		}
-
-		// STEP 2: Validate avatar
-		if (utils.chkObj(avatar) && avatar == '')
-		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_avatar,[]));
-			return;
-		}
-
-		// STEP 3: Validate gender
-		if (utils.chkObj(gender) && gender == '')
-		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_gender,[]));
-			return;
-		}
-
-		// STEP 4: Validate birthday
-		if (utils.chkObj(birthday) && (birthday == '' || utils.validateBirthday(birthday) == false))
-		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_birthday,[]));
-			return;
-		}
-
-		// STEP 5: Validate phone
-		if (utils.chkObj(phone) && (phone == '' || validatePhone(phone) == false))
-		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_phone,[]));
-			return;
-		}
-
-		// STEP 6: Validate profile_description
-		if (utils.chkObj(profile_description) && profile_description == '')
-		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_profile_description,[]));
-			return;
-		}
-		*/
 		// get account_id from request.token
-		var account_id = req.decoded['account_id'];
+		var account_id = req.decoded['account']['account_id'];
 
 		pool.getConnection(function(err, connection) {
 			if (err) {
@@ -145,18 +105,14 @@ module.exports = function(app, pool, config){
 				} else {
 					connection.query({
 						sql: 'UPDATE `profile` SET '
-						+ '`user_status`= ?,`avatar`= ?,`gender`= ?,`birthday`= ?,'
-						+ '`phone`= ?,`profile_description`= ?'
+						+ '`user_status`= ?,`phone`= ?,`profile_description`= ?'
 						+ ' WHERE `account_id` = ?',
 						timeout: 1000, // 1s
 						values:
 						[
-							utils.chkObj(user_status) ? user_status 					: results[0]['user_status'],
-							utils.chkObj(avatar) ? avatar 							: results[0]['avatar'],
-							utils.chkObj(gender) ? gender 							: results[0]['gender'],
-							utils.chkObj(birthday) ? birthday 						: results[0]['birthday'],
-							utils.chkObj(phone) ? phone 								: results[0]['phone'],
-							utils.chkObj(profile_description) ? profile_description 	: results[0]['profile_description'],
+							(utils.chkObj(user_status)) ? user_status 					: results[0]['user_status'],
+							(utils.chkObj(phone)) ? phone 								: results[0]['phone'],
+							(utils.chkObj(profile_description)) ? profile_description 	: results[0]['profile_description'],
 						 	account_id
 						]
 					}, function (error, results, fields) {
@@ -175,17 +131,14 @@ module.exports = function(app, pool, config){
 	// ---------------------------------------------------------
 	// AROUND PROFILE (this is authenticated)
 	// ---------------------------------------------------------
-
-	// http://localhost:1234/api/aroundProfile
 	rootRouter.get('/aroundProfile', function(req, res) {
 
-		var latitude = req.body.latitude || req.param('latitude') || req.headers['latitude'];
-		var longitude = req.body.longitude || req.param('longitude') || req.headers['longitude'];
-		var page_size = req.body.page_size || req.param('page_size') || req.headers['page_size'];
-		var page = req.body.page || req.param('page') || req.headers['page'];
+		var latitude = req.query['latitude'];
+		var longitude = req.query['longitude'];
+		var page_size = req.query['page_size'];
+		var page = req.query['page'];
 
-		var gender = req.body.gender || req.param('gender') || req.headers['gender'];
-
+		var gender = req.query['gender'];
 		if ( !(utils.chkObj(latitude)) || !(utils.chkObj(longitude )) )
 		{
 			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_lat_long,[]));
@@ -203,18 +156,19 @@ module.exports = function(app, pool, config){
 			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
 			return;
 		}
-
+		var needQueryGender = false;
 		if (utils.chkObj(gender))
 		{
-			if (isNaN(gender))
-			{
-				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_gender,[]));
+			if (isNaN(gender)){
+				if (gender.length > 0 && gender != 'all'){
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
 				return;
-			}
-			else if (gender != 0 && gender != 1)
-			{
-				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_gender,[]));
+				}
+			} else if ((gender != 0 && gender != 1)) {
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
 				return;
+			} else if (gender != 'all' && (gender == 0 || gender == 1)) {
+				needQueryGender = true;
 			}
 		}
 		var limit = page_size;
@@ -225,10 +179,10 @@ module.exports = function(app, pool, config){
 		+ ' * COS(RADIANS(longitude - ' + longitude + ')) + SIN(RADIANS(latitude))'
 		+ ' * SIN(RADIANS(' + latitude + '))))';
 
-		var sqlQuery = 'SELECT * ,' + distanceStr + 'AS distance'
+		var sqlQuery = 'SELECT * ,ROUND(' + distanceStr + ',6) '+ 'AS distance'
 		+ ' FROM `profile`'
 		+ ' WHERE ' + distanceStr + ' <= 10'
-		+ ((utils.chkObj(gender) && !(isNaN(gender))) ? ' AND `gender` = ' + gender : '')
+		+ (needQueryGender ? ' AND `gender` = ' + gender : '')
 		+ ' ORDER BY distance ASC'
 		+ ' LIMIT ' + limit + ' OFFSET ' + offset;
 
@@ -243,10 +197,578 @@ module.exports = function(app, pool, config){
 				values: []
 			}, function(error, results, fields) {
 				connection.release();
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,sqlQuery,[]));
+					return;
+				}
 				if (results.length == 0 || results == null) {
 					res.status(204).send(utils.responseConvention(errcode.code_success,[]));
 				} else {
-					res.status(200).send(utils.responseConvention(errcode.code_success,results));
+					var arrayResults = [];
+					for (i = 0 ; i< results.length ; i++) {
+						if (results[i]['profile_id'] != req.decoded['profile']['profile_id']) {
+							arrayResults.push(results[i]);
+						}
+					}
+					res.status(200).send(utils.responseConvention(errcode.code_success,arrayResults));
+				}
+			});
+		});
+	});
+
+	// ---------------------------------------------------------
+	// FOLLOW PROFILE (this is authenticated)
+	// ---------------------------------------------------------
+	rootRouter.post('/follow', function(req, res) {
+
+		// check header or url parameters or post parameters for token
+		var profile_id = req.body.profile_id || req.param('profile_id') || req.headers['profile_id'];
+		var account_id = req.decoded['account']['account_id'];
+		var sqlQuery = '';
+
+		// Validate profile_id which is followed
+		if (
+			utils.chkObj(profile_id) == false || (utils.chkObj(profile_id) && isNaN(profile_id))
+		)
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_followed_profile_id,[]));
+			return;
+		}
+
+		pool.getConnection(function(err, connection) {
+			if (err) {
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+				return;
+			}
+			// check for who is follower of this profile_id
+			connection.query({
+				sql: 'SELECT * FROM `profile` WHERE profile_id = ?',
+				timeout: 1000, // 1s
+				values: [profile_id]
+			}, function(error, results, fields) {
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+					return;
+				}
+
+				if (results.length == 0) {
+					res.status(400).send(utils.responseConvention(errcode.code_not_exist_followed_profile_id,[]));
+					return;
+				}
+
+				var current_followers_id = results[0]['followers_id'];
+
+				connection.query({ // check for who follow this profile_id
+					sql: 'SELECT * FROM `profile` WHERE `account_id` = ?',
+					timeout: 1000, // 1s
+					values: [account_id]
+				}, function(error, results, fields) {
+
+					if (error) {
+						res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+						return;
+					}
+
+					// Validate error: follow self or not
+					if (profile_id == results[0]['profile_id']) {
+						res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_unfollow_self,[]));
+						return;
+					}
+
+					var current_following_id = results[0]['following_id'];
+					//==========================================================
+					var isAllowFollow = true;
+					// CHECK IF REQUEST_ACC_ID FOLLOWED THIS PROFILE OR NOT YET
+					if (utils.chkObj(current_followers_id)) {
+						if (current_followers_id.length > 0) {
+							var array_followers_id = current_followers_id.split('|');
+							if (array_followers_id.length > 0) {
+								for (i = 0; i < array_followers_id.length; i++) {
+									if (array_followers_id[i] == results[0]['profile_id']) {
+										isAllowFollow = false;
+										break;
+									}
+								}
+							}
+						}
+					}
+					// CAN FOLLOW OR NOT?
+					if (isAllowFollow == false) {
+						res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_profile_id,[]));
+						return;
+					}
+					//==========================================================
+
+					// UPDATE FOR FOLLOWING: PROFILE_ID
+					var new_following_id = '';
+					new_following_id = new_following_id + (utils.chkObj(current_following_id) ? current_following_id + '|' : '') + profile_id;
+
+					// UPDATE FOR FOLLOWERS:
+					var new_followers_id = '';
+					new_followers_id = new_followers_id + current_followers_id + results[0]['profile_id'];
+
+					/* PASS CHECKING -> UPDATE TO DB */
+					/* Begin transaction */
+					console.log('Transaction Start!');
+					connection.beginTransaction(function(err) {
+						if (err)
+						{
+							res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+							connection.release();
+							return;
+						}
+
+						//---------STEP 1: update [followers_id] to table[profile] of followed profile----------
+						var insertedAccountId;
+						connection.query({
+							sql: 'UPDATE `profile` SET `followers_id` = ? WHERE `profile_id` = ?',
+							timeout: 1000, // 1s
+							values: [new_followers_id ,profile_id]
+						}, function (error, results, fields) {
+
+							if (error) {
+								console.log('//---------STEP 1: update to table[profile] of followed profile----------');
+								res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+								connection.rollback(function() {
+									console.log(error);
+								});
+								connection.release();
+							}
+							else
+							{
+						//---------STEP 2: update to table[profile] of following profile----------
+								connection.query({
+									sql: 'UPDATE `profile` SET `following_id` = ? WHERE account_id = ?',
+									timeout: 1000, // 1s
+									values: [new_following_id,account_id]
+								}, function (error, results, fields) {
+
+									if (error) {
+										console.log('//---------STEP 2: update to table[profile] of following profile----------');
+										res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+										connection.rollback(function() {
+											console.log(error);
+										});
+										connection.release();
+									} else {
+										connection.commit(function(err) {
+											if (err)
+											{
+												console.log('Transaction Failed.');
+												res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+												connection.rollback(function() {
+													console.log(error);
+												});
+												connection.release();
+											}
+											else
+											{
+												res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+												console.log('Transaction Complete.');
+												connection.release();
+											}
+						//--------------FOLLOW SUCESSFULLY----------------------------
+										});
+									}
+								});
+							}
+						});
+					});
+					/* End transaction */
+				});
+			});
+		});
+	});
+
+	// ---------------------------------------------------------
+	// UNFOLLOW PROFILE (this is authenticated)
+	// ---------------------------------------------------------
+	rootRouter.post('/unfollow', function(req, res) {
+
+		// check header or url parameters or post parameters for token
+		var profile_id = req.body.profile_id || req.param('profile_id') || req.headers['profile_id'];
+		var account_id = req.decoded['account']['account_id'];
+		var sqlQuery = '';
+
+		// Validate profile_id which is followed
+		if (
+			utils.chkObj(profile_id) == false || (utils.chkObj(profile_id) && isNaN(profile_id))
+		)
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_followed_profile_id,[]));
+			return;
+		}
+
+		pool.getConnection(function(err, connection) {
+			if (err) {
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+				return;
+			}
+			// check for who is follower of this profile_id
+			connection.query({
+				sql: 'SELECT * FROM `profile` WHERE profile_id = ?',
+				timeout: 1000, // 1s
+				values: [profile_id]
+			}, function(error, results, fields) {
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+					return;
+				}
+
+				if (results.length == 0) {
+					res.status(400).send(utils.responseConvention(errcode.code_not_exist_followed_profile_id,[]));
+					return;
+				}
+
+				var current_followers_id = results[0]['followers_id'];
+
+				connection.query({ // check for who follow this profile_id
+					sql: 'SELECT * FROM `profile` WHERE `account_id` = ?',
+					timeout: 1000, // 1s
+					values: [account_id]
+				}, function(error, results, fields) {
+
+					if (error) {
+						res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+						return;
+					}
+
+					// Validate error: unfollow self or not
+					if (profile_id == results[0]['profile_id']) {
+						res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_unfollow_self,[]));
+						return;
+					}
+
+					var current_following_id = results[0]['following_id'];
+					//==========================================================
+					var isFollower = false;
+					// CHECK IF REQUEST_ACC_ID FOLLOWED THIS PROFILE OR NOT YET
+					if (utils.chkObj(current_followers_id)) {
+						if (current_followers_id.length > 0) {
+							var array_followers_id = current_followers_id.split('|');
+							if (array_followers_id.length > 0) {
+								for (i = 0; i < array_followers_id.length; i++) {
+									if (array_followers_id[i] == results[0]['profile_id']) {
+										isFollower = true;
+										break;
+									}
+								}
+							}
+						}
+					}
+					// IS FOLLOWER OR NOT?
+					if (isFollower == false) {
+						res.status(400).send(utils.responseConvention(errcode.code_not_allow_unfollow_profile_id,[]));
+						return;
+					}
+					//==========================================================
+
+					// UPDATE FOR FOLLOWERS:
+					var new_followers_id = '';
+
+					var array_followers_id = current_followers_id.split('|');
+					if (array_followers_id.length > 0) {
+						for (i = 0; i < array_followers_id.length; i++) {
+							if (array_followers_id[i] != results[0]['profile_id']) {
+								new_followers_id = new_followers_id + (i > 0 ? '|' : '') + array_followers_id[i];
+							}
+						}
+					}
+
+					// UPDATE FOR FOLLOWING: PROFILE_ID
+					var new_following_id = (current_following_id.length > 0) ? '' : profile_id;
+
+					if (current_following_id.length > 0) {
+						var array_following_id = current_following_id.split('|');
+						if (array_following_id.length > 0) {
+							for (i = 0; i < array_following_id.length; i++) {
+								if (array_following_id[i] != profile_id) {
+									new_following_id = new_following_id + (i > 0 ? '|' : '') + array_following_id[i];
+								}
+							}
+						}
+					}
+
+					/* PASS CHECKING -> UPDATE TO DB */
+					/* Begin transaction */
+					console.log('Transaction Start!');
+					connection.beginTransaction(function(err) {
+						if (err)
+						{
+							res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+							connection.release();
+							return;
+						}
+
+						//---------STEP 1: update [followers_id] to table[profile] of followed profile----------
+						var insertedAccountId;
+						connection.query({
+							sql: 'UPDATE `profile` SET `followers_id` = ? WHERE `profile_id` = ?',
+							timeout: 1000, // 1s
+							values: [new_followers_id ,profile_id]
+						}, function (error, results, fields) {
+
+							if (error) {
+								console.log('//---------STEP 1: update to table[profile] of followed profile----------');
+								res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+								connection.rollback(function() {
+									console.log(error);
+								});
+								connection.release();
+							}
+							else
+							{
+						//---------STEP 2: update to table[profile] of following profile----------
+								connection.query({
+									sql: 'UPDATE `profile` SET `following_id` = ? WHERE account_id = ?',
+									timeout: 1000, // 1s
+									values: [new_following_id,account_id]
+								}, function (error, results, fields) {
+
+									if (error) {
+										console.log('//---------STEP 2: update to table[profile] of following profile----------');
+										res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+										connection.rollback(function() {
+											console.log(error);
+										});
+										connection.release();
+									} else {
+										connection.commit(function(err) {
+											if (err)
+											{
+												console.log('Transaction Failed.');
+												res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+												connection.rollback(function() {
+													console.log(error);
+												});
+												connection.release();
+											}
+											else
+											{
+												res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+												console.log('Transaction Complete.');
+												connection.release();
+											}
+						//--------------UNFOLLOW SUCESSFULLY----------------------------
+										});
+									}
+								});
+							}
+						});
+					});
+					/* End transaction */
+				});
+			});
+		});
+	});
+
+	// ---------------------------------------------------------
+	// GET FOLLOWER PROFILE (this is authenticated)
+	// ---------------------------------------------------------
+	rootRouter.get('/follower', function(req, res) {
+
+		// check header or url parameters or post parameters for token
+		var profile_id = req.query['profile_id'];
+		var account_id = req.decoded['account']['account_id'];
+		var page_size = req.query['page_size'];
+		var page = req.query['page'];
+		var gender = req.query['gender'];
+
+		var sqlQuery = '';
+
+		var getOtherProfile = false;
+		if (utils.chkObj(profile_id) && isNaN(profile_id) == false)  {
+			getOtherProfile = true
+		}
+
+		if (!(utils.chkObj(page_size)) || isNaN(page_size))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
+			return;
+		}
+
+		if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+			return;
+		}
+		var needQueryGender = false;
+		if (utils.chkObj(gender))
+		{
+			if (isNaN(gender)){
+				if (gender.length > 0 && gender != 'all'){
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+				}
+			} else if ((gender != 0 && gender != 1)) {
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+			} else if (gender != 'all' && (gender == 0 || gender == 1)) {
+				needQueryGender = true;
+			}
+		}
+		var limit = page_size;
+		var offset = (page - 1) * page_size;
+
+		if (getOtherProfile) { // contain profile_id in request
+			sqlQuery = 'SELECT * FROM `profile` WHERE profile_id = ?'
+		} else {
+			sqlQuery = 'SELECT * FROM `profile` WHERE account_id = ?'
+		}
+
+		pool.getConnection(function(err, connection) {
+			if (err) {
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+				return;
+			}
+			connection.query({
+				sql: sqlQuery,
+				timeout: 1000, // 1s
+				values: [getOtherProfile ? profile_id : account_id]
+			}, function(error, results, fields) {
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+					connection.release();
+					return;
+				}
+				if (results.length == 0 || results == null) { // not found record
+					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile,[]));
+					connection.release();
+				} else { // found record
+					var arrayFollowersId = results[0]['followers_id'].split('|');
+					if (utils.chkObj(arrayFollowersId)) {
+						if (arrayFollowersId.length == 0) {
+							res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+							connection.release();
+						} else {
+							connection.query({
+								sql: 'SELECT * FROM `profile` WHERE profile_id IN (' + arrayFollowersId + ')'
+								+ (needQueryGender ? ' WHERE `gender` = ' + gender : ''),
+								timeout: 1000, // 1s
+								values: []
+							}, function(error, results, fields) {
+								connection.release();
+								if (error) {
+									res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+									return;
+								}
+								if (results.length == 0 || results == null) { // not found record
+									res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+								} else { // found record
+									res.status(200).send(utils.responseConvention(errcode.code_success,results));
+								}
+							});
+						}
+					} else {
+						res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+						connection.release();
+					}
+				}
+			});
+		});
+	});
+
+	// ---------------------------------------------------------
+	// GET FOLLOWING PROFILE (this is authenticated)
+	// ---------------------------------------------------------
+	rootRouter.get('/following', function(req, res) {
+
+		// check header or url parameters or post parameters for token
+		var profile_id = req.query['profile_id'];
+		var account_id = req.decoded['account']['account_id'];
+		var page_size = req.query['page_size'];
+		var page = req.query['page'];
+		var gender = req.query['gender'];
+
+		var sqlQuery = '';
+
+		var getOtherProfile = false;
+		if (utils.chkObj(profile_id) && isNaN(profile_id) == false)  {
+			getOtherProfile = true
+		}
+
+		if (!(utils.chkObj(page_size)) || isNaN(page_size))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
+			return;
+		}
+
+		if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+			return;
+		}
+		var needQueryGender = false;
+		if (utils.chkObj(gender))
+		{
+			if (isNaN(gender)){
+				if (gender.length > 0 && gender != 'all'){
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+				}
+			} else if ((gender != 0 && gender != 1)) {
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+			} else if (gender != 'all' && (gender == 0 || gender == 1)) {
+				needQueryGender = true;
+			}
+		}
+		var limit = page_size;
+		var offset = (page - 1) * page_size;
+
+		if (getOtherProfile) { // contain profile_id in request
+			sqlQuery = 'SELECT * FROM `profile` WHERE profile_id = ?'
+		} else {
+			sqlQuery = 'SELECT * FROM `profile` WHERE account_id = ?'
+		}
+
+		pool.getConnection(function(err, connection) {
+			if (err) {
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in connection database',[]));
+				return;
+			}
+			connection.query({
+				sql: sqlQuery,
+				timeout: 1000, // 1s
+				values: [getOtherProfile ? profile_id : account_id]
+			}, function(error, results, fields) {
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+					connection.release();
+					return;
+				}
+				if (results.length == 0 || results == null) { // not found record
+					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile,[]));
+					connection.release();
+				} else { // found record
+					var arrayFollowingId = results[0]['following_id'].split('|');
+					if (utils.chkObj(arrayFollowingId)) {
+						if (arrayFollowingId.length == 0) {
+							res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+							connection.release();
+						} else {
+							connection.query({
+								sql: 'SELECT * FROM `profile` WHERE `profile_id` IN (' + arrayFollowingId + ')'
+								+ (needQueryGender ? ' WHERE `gender` = ' + gender : ''),
+								timeout: 1000, // 1s
+								values: []
+							}, function(error, results, fields) {
+								connection.release();
+								if (error) {
+									res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+									return;
+								}
+								if (results.length == 0 || results == null) { // not found record
+									res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+								} else { // found record
+									res.status(200).send(utils.responseConvention(errcode.code_success,results));
+								}
+							});
+						}
+					} else {
+						res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+						connection.release();
+					}
 				}
 			});
 		});

@@ -22,7 +22,7 @@ module.exports = function(app, pool, config){
     	}
 
     	// get account_id from request.token
-    	var account_id = req.decoded['account_id'];
+    	var account_id = req.decoded['account']['account_id'];
 
     	pool.getConnection(function(err, connection) {
     		if (err) {

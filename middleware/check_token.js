@@ -8,7 +8,7 @@ var jwt = require('jsonwebtoken');
 module.exports = function(req, res, next) {
 
     // check header or url parameters or post parameters for token
-    var token = req.body.token || req.param('token') || req.headers['token'];
+    var token = req.headers['token'];
 
     // decode token
     if (token) {
@@ -21,6 +21,7 @@ module.exports = function(req, res, next) {
 					data: []
                 });
             } else {
+
                 // if everything is good, save to request for use in other routes
                 req.decoded = decoded;
                 next();

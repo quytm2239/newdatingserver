@@ -17,6 +17,7 @@ var mysql = require('mysql');
 var config = require('./config');
 var errcode = require('./errcode');
 var utils = require('./utils');
+var show_clientip = require('./middleware/show_clientip');
 
 // create instance of "pool" mySql connection
 var pool = mysql.createPool(config.db_config);
@@ -26,15 +27,19 @@ app.set('port', config.PORT || process.env.port || 1234);
 app.set('super_secret', config.super_secret); // secret variable
 app.set('utils',utils);
 app.set('errcode',errcode);
+app.set('upload_dir',__dirname + '/uploaded_image');
 
 // setup parser for request body content
 app.use(bodyParser.urlencoded({
 	extended: true
 }));
 app.use(bodyParser.json());
+
 // use morgan to log requests to the console
 app.use(morgan('dev'));
 app.use(express.static(__dirname + '/public'));
+app.use(express.static(__dirname + '/uploaded_image'));
+app.use(show_clientip);
 
 //This allows you to require files relative to the root http://goo.gl/5RkiMR
 requireFromRoot = (function(root) {
