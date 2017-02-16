@@ -167,15 +167,32 @@ module.exports = function(app, pool, config){
 		// check header or url parameters or post parameters for token
 		var account_id = req.query['account_id'];
 		var input_acc_id = account_id ? account_id : req.decoded['account']['account_id'];
-		//----------------------------- save in DB -------------------------
+		var page_size = req.query['page_size'];
+		var page = req.query['page'];
+
+		if (!(utils.chkObj(page_size)) || isNaN(page_size))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
+			return;
+		}
+
+		if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+			return;
+		}
+
+		var limit = page_size;
+		var offset = (page - 1) * page_size;
+
 		pool.getConnection(function(err, connection) {
 			if (err) {
 				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
-			//------------------- UPDATE USER's PHOTOS ------------------
+			//------------------- GET USER's PHOTOS ------------------
 			connection.query({
-				sql: 'SELECT * FROM `photos` WHERE `account_id` = ?',
+				sql: 'SELECT * FROM `photos` WHERE `account_id` = ? LIMIT ' + limit + ' OFFSET ' + offset,
 				timeout: 2000, // 2s
 				values:[input_acc_id]
 			}, function (error, results, fields) {

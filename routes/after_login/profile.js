@@ -613,9 +613,9 @@ module.exports = function(app, pool, config){
 		var offset = (page - 1) * page_size;
 
 		if (getOtherProfile) { // contain profile_id in request
-			sqlQuery = 'SELECT * FROM `profile` WHERE profile_id = ?'
+			sqlQuery = 'SELECT * FROM `profile` WHERE profile_id = ? LIMIT ' + limit + ' OFFSET ' + offset;
 		} else {
-			sqlQuery = 'SELECT * FROM `profile` WHERE account_id = ?'
+			sqlQuery = 'SELECT * FROM `profile` WHERE account_id = ? LIMIT ' + limit + ' OFFSET ' + offset;
 		}
 
 		pool.getConnection(function(err, connection) {
@@ -719,9 +719,9 @@ module.exports = function(app, pool, config){
 		var offset = (page - 1) * page_size;
 
 		if (getOtherProfile) { // contain profile_id in request
-			sqlQuery = 'SELECT * FROM `profile` WHERE profile_id = ?'
+			sqlQuery = 'SELECT * FROM `profile` WHERE profile_id = ? LIMIT ' + limit + ' OFFSET ' + offset;
 		} else {
-			sqlQuery = 'SELECT * FROM `profile` WHERE account_id = ?'
+			sqlQuery = 'SELECT * FROM `profile` WHERE account_id = ? LIMIT ' + limit + ' OFFSET ' + offset;
 		}
 
 		pool.getConnection(function(err, connection) {
