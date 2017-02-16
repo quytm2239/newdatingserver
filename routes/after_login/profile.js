@@ -171,7 +171,7 @@ module.exports = function(app, pool, config){
 
 		var sqlQuery = 'SELECT * ,ROUND(' + distanceStr + ',6) '+ 'AS distance'
 		+ ' FROM `profile`'
-		+ ' WHERE ' + distanceStr + ' <= 10'
+		+ ' WHERE ' + distanceStr + ' <= 10 AND `profile_id` != ' + req.decoded['profile']['profile_id']
 		+ (needQueryGender ? ' AND `gender` = ' + gender : '')
 		+ ' ORDER BY distance ASC'
 		+ ' LIMIT ' + limit + ' OFFSET ' + offset;
@@ -182,26 +182,36 @@ module.exports = function(app, pool, config){
 				return;
 			}
 			connection.query({
-				sql: sqlQuery,
-				timeout: 10000, // 10s
+				sql: 'SELECT * FROM `profile` WHERE `profile_id` = ' + req.decoded['profile']['profile_id'],
+				timeout: 1000, // 1s
 				values: []
 			}, function(error, results, fields) {
-				connection.release();
 				if (error) {
-					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,sqlQuery,[]));
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 					return;
 				}
-				if (results.length == 0 || results == null) {
-					res.status(204).send(utils.responseConvention(errcode.code_success,[]));
-				} else {
-					var arrayResults = [];
-					for (i = 0 ; i< results.length ; i++) {
-						if (results[i]['profile_id'] != req.decoded['profile']['profile_id']) {
-							arrayResults.push(results[i]);
-						}
+				var array_followers_id = (utils.chkObj(results[0]['followers_id'])) ? results[0]['followers_id'].split('|') :[];
+				var array_following_id = (utils.chkObj(results[0]['following_id'])) ? results[0]['following_id'].split('|') :[];
+
+				connection.query({
+					sql: sqlQuery,
+					timeout: 10000, // 10s
+					values: []
+				}, function(error, results, fields) {
+					connection.release();
+					if (error) {
+						res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+						return;
 					}
-					res.status(200).send(utils.responseConvention(errcode.code_success,arrayResults));
-				}
+					var aroundProfile = utils.chkObj(results) ? results : [];
+					res.status(200).send({
+						status: errcode.code_success,
+						message: errcode.errorMessage(errcode.code_success),
+						data: aroundProfile,
+						follower_id: array_followers_id,
+						following_id: array_following_id
+					});
+				});
 			});
 		});
 	});
