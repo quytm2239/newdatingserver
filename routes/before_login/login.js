@@ -72,7 +72,7 @@ module.exports = function(app, pool, config){
 								'profile': results[0]
 
 							}
-							console.log(tokenData);
+
 							var token = jwt.sign(tokenData, config.super_secret, {
 								expiresIn: 86400 // expires in 24 hours
 							});
