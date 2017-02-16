@@ -112,14 +112,12 @@ module.exports = function(app, pool, config){
 				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_upload_file,[]));
 				return;
 			}
-
 			console.log('Complete upload image.....');
 			var img_url_concat = '';
 			for (i = 0; i < req.files.length; i++) {
 				var img_url = 'http://178.62.102.5:1234/' + account_id + '/photos/' + (req.files[i]).filename;
 				img_url_concat = img_url_concat + (i > 0 ? '|' : '') + img_url;
 			}
-			console.log(img_url_concat);
 			//----------------------------- save in DB -------------------------
 			pool.getConnection(function(err, connection) {
 				if (err) {

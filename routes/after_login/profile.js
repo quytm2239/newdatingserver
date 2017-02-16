@@ -441,11 +441,13 @@ module.exports = function(app, pool, config){
 					// UPDATE FOR FOLLOWERS:
 					var new_followers_id = '';
 
-					var array_followers_id = current_followers_id.split('|');
-					if (array_followers_id.length > 0) {
-						for (i = 0; i < array_followers_id.length; i++) {
-							if (array_followers_id[i] != results[0]['profile_id']) {
-								new_followers_id = new_followers_id + (i > 0 ? '|' : '') + array_followers_id[i];
+					if (current_following_id.length > 0) {
+						var array_followers_id = current_followers_id.split('|');
+						if (array_followers_id.length > 0) {
+							for (i = 0; i < array_followers_id.length; i++) {
+								if (array_followers_id[i] != results[0]['profile_id']) {
+									new_followers_id = new_followers_id + (i > 0 ? '|' : '') + array_followers_id[i];
+								}
 							}
 						}
 					}
@@ -610,8 +612,8 @@ module.exports = function(app, pool, config){
 					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile,[]));
 					connection.release();
 				} else { // found record
-					var arrayFollowersId = results[0]['followers_id'].split('|');
-					if (utils.chkObj(arrayFollowersId)) {
+					if (utils.chkObj(results[0]['followers_id'])) {
+						var arrayFollowersId = results[0]['followers_id'].split('|');
 						if (arrayFollowersId.length == 0) {
 							res.status(200).send(utils.responseConvention(errcode.code_success,[]));
 							connection.release();
@@ -716,8 +718,8 @@ module.exports = function(app, pool, config){
 					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile,[]));
 					connection.release();
 				} else { // found record
-					var arrayFollowingId = results[0]['following_id'].split('|');
-					if (utils.chkObj(arrayFollowingId)) {
+					if (utils.chkObj(results[0]['followers_id'])) {
+						var arrayFollowersId = results[0]['followers_id'].split('|');
 						if (arrayFollowingId.length == 0) {
 							res.status(200).send(utils.responseConvention(errcode.code_success,[]));
 							connection.release();
