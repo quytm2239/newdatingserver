@@ -110,7 +110,7 @@ module.exports =
     	if (
     		(isNaN(latitude) == false || isNaN(longitude) == false)
     		&&
-    		(latitude <= 90.0 && latitude >= -90.0) || (longitude >= 0.0 && longitude <= 360.0)
+    		(latitude <= 90.0 && latitude >= -90.0) || (longitude >= - 180.0 && longitude <= 180.0)
     		) {
     		return true;
     	}
