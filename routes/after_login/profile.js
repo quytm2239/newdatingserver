@@ -22,15 +22,7 @@ module.exports = function(app, pool, config){
 		if (utils.chkObj(profile_id) && isNaN(profile_id) == false)  {
 			getOtherProfile = true
 		}
-
-		var account_id = req.decoded['account']['account_id'];
-		var sqlQuery = '';
-
-		if (utils.chkObj(profile_id)) { // contain profile_id in request
-			sqlQuery = 'SELECT * FROM `profile` WHERE profile_id = ?'
-		} else {
-			sqlQuery = 'SELECT * FROM `profile` WHERE account_id = ?'
-		}
+		var input_profile_id = getOtherProfile ? profile_id : req.decoded['profile']['profile_id'];
 
 		pool.getConnection(function(err, connection) {
 			if (err) {
@@ -38,15 +30,38 @@ module.exports = function(app, pool, config){
 				return;
 			}
 			connection.query({
-				sql: sqlQuery,
+				sql: 'SELECT * FROM `profile` WHERE profile_id = ?',
 				timeout: 1000, // 1s
-				values: [getOtherProfile ? profile_id : account_id]
+				values: [input_profile_id]
 			}, function(error, results, fields) {
-				connection.release();
-				if (results.length == 0 || results == null) { // not found record
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+				} else if (results.length == 0 || results == null) { // not found record
 					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile,[]));
 				} else { // found record
-					res.status(200).send(utils.responseConvention(errcode.code_success,results));
+					var profile_data = results[0];
+					var total_followers = total_followers = utils.chkObj(results[0]['followers_id']) ? (results[0]['followers_id'].split('|')).length : 0;
+					connection.query({
+						sql: 'SELECT * FROM `photos` WHERE account_id = ?',
+						timeout: 1000, // 1s
+						values: [results[0]['account_id']]
+					}, function(error, results, fields) {
+						connection.release();
+						if (error) {
+							res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+							return;
+						} else {
+							// Have record and field: img_origin is not empty -> get length
+							var total_photos = (utils.chkObj(results) && utils.chkObj(results[0]['img_origin'])) ? (results[0]['img_origin'].split('|')).length : 0;
+							res.status(200).send({
+								status: errcode.code_success,
+								message: errcode.errorMessage(errcode.code_success),
+								data: [profile_data],
+								total_followers: total_followers,
+								total_photos: total_photos
+							});
+						}
+					});
 				}
 			});
 		});
