@@ -9,9 +9,6 @@ var http = require('http');
 var bodyParser = require('body-parser');
 var morgan = require('morgan');
 var mysql = require('mysql');
-// var nodemailer = require('nodemailer');
-// var passwordHash = require('password-hash');
-// var jwt = require('jsonwebtoken'); // used to create, sign, and verify tokens
 
 // get our predefined file
 var config = require('./config');
