@@ -223,7 +223,7 @@ module.exports = function(app, pool, config){
 
 		// check header or url parameters or post parameters for token
 		var profile_id = req.body.profile_id || req.param('profile_id') || req.headers['profile_id'];
-		var account_id = req.decoded['account']['account_id'];
+		var req_profile_id = req.decoded['profile']['profile_id'];
 		var sqlQuery = '';
 
 		// Validate profile_id which is followed
@@ -232,6 +232,12 @@ module.exports = function(app, pool, config){
 		)
 		{
 			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_followed_profile_id,[]));
+			return;
+		}
+
+		// Validate error: follow self or not
+		if (profile_id == req_profile_id) {
+			res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_unfollow_self,[]));
 			return;
 		}
 
@@ -250,18 +256,19 @@ module.exports = function(app, pool, config){
 					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 					return;
 				}
-
-				if (results.length == 0) {
+				// Profile not found
+				if (utils.chkObj(results) == false) {
 					res.status(400).send(utils.responseConvention(errcode.code_not_exist_followed_profile_id,[]));
 					return;
 				}
-
+				// Found, get list followers_id
 				var current_followers_id = results[0]['followers_id'];
 
-				connection.query({ // check for who follow this profile_id
-					sql: 'SELECT * FROM `profile` WHERE `account_id` = ?',
+				// Get info of req_profile_id follow this profile_id
+				connection.query({
+					sql: 'SELECT * FROM `profile` WHERE `profile_id` = ?',
 					timeout: 1000, // 1s
-					values: [account_id]
+					values: [req_profile_id]
 				}, function(error, results, fields) {
 
 					if (error) {
@@ -269,14 +276,10 @@ module.exports = function(app, pool, config){
 						return;
 					}
 
-					// Validate error: follow self or not
-					if (profile_id == results[0]['profile_id']) {
-						res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_unfollow_self,[]));
-						return;
-					}
-
+					// Found, get list following_id
 					var current_following_id = results[0]['following_id'];
-					//==========================================================
+
+					//=================CHECK FOLLOWED OR NOT====================
 					var isAllowFollow = true;
 					// CHECK IF REQUEST_ACC_ID FOLLOWED THIS PROFILE OR NOT YET
 					if (utils.chkObj(current_followers_id)) {
@@ -284,7 +287,7 @@ module.exports = function(app, pool, config){
 							var array_followers_id = current_followers_id.split('|');
 							if (array_followers_id.length > 0) {
 								for (i = 0; i < array_followers_id.length; i++) {
-									if (array_followers_id[i] == results[0]['profile_id']) {
+									if (array_followers_id[i] == req_profile_id) {
 										isAllowFollow = false;
 										break;
 									}
@@ -305,7 +308,7 @@ module.exports = function(app, pool, config){
 
 					// UPDATE FOR FOLLOWERS:
 					var new_followers_id = '';
-					new_followers_id = new_followers_id + current_followers_id + results[0]['profile_id'];
+					new_followers_id = new_followers_id + (utils.chkObj(current_followers_id) ? current_followers_id + '|' : '') + req_profile_id;
 
 					/* PASS CHECKING -> UPDATE TO DB */
 					/* Begin transaction */
@@ -338,9 +341,9 @@ module.exports = function(app, pool, config){
 							{
 						//---------STEP 2: update to table[profile] of following profile----------
 								connection.query({
-									sql: 'UPDATE `profile` SET `following_id` = ? WHERE account_id = ?',
+									sql: 'UPDATE `profile` SET `following_id` = ? WHERE `profile_id` = ?',
 									timeout: 1000, // 1s
-									values: [new_following_id,account_id]
+									values: [new_following_id,req_profile_id]
 								}, function (error, results, fields) {
 
 									if (error) {
@@ -387,10 +390,11 @@ module.exports = function(app, pool, config){
 
 		// check header or url parameters or post parameters for token
 		var profile_id = req.body.profile_id || req.param('profile_id') || req.headers['profile_id'];
+		var req_profile_id = req.decoded['profile']['profile_id'];
 		var account_id = req.decoded['account']['account_id'];
 		var sqlQuery = '';
 
-		// Validate profile_id which is followed
+		// Validate request's profile_id
 		if (
 			utils.chkObj(profile_id) == false || (utils.chkObj(profile_id) && isNaN(profile_id))
 		)
@@ -399,12 +403,18 @@ module.exports = function(app, pool, config){
 			return;
 		}
 
+		// Validate error: unfollow self or not
+		if (profile_id == req_profile_id) {
+			res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_unfollow_self,[]));
+			return;
+		}
+
 		pool.getConnection(function(err, connection) {
 			if (err) {
 				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
-			// check for who is follower of this profile_id
+			// Get info of profile_id
 			connection.query({
 				sql: 'SELECT * FROM `profile` WHERE profile_id = ?',
 				timeout: 1000, // 1s
@@ -414,18 +424,19 @@ module.exports = function(app, pool, config){
 					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 					return;
 				}
-
-				if (results.length == 0) {
+				// Not fount profile of profile_id
+				if (utils.chkObj(results) == false) {
 					res.status(400).send(utils.responseConvention(errcode.code_not_exist_followed_profile_id,[]));
 					return;
 				}
-
+				// Found, get list followers_id
 				var current_followers_id = results[0]['followers_id'];
 
-				connection.query({ // check for who follow this profile_id
-					sql: 'SELECT * FROM `profile` WHERE `account_id` = ?',
+				// Get info of req_profile_id
+				connection.query({
+					sql: 'SELECT * FROM `profile` WHERE `profile_id` = ?',
 					timeout: 1000, // 1s
-					values: [account_id]
+					values: [req_profile_id]
 				}, function(error, results, fields) {
 
 					if (error) {
@@ -433,25 +444,19 @@ module.exports = function(app, pool, config){
 						return;
 					}
 
-					// Validate error: unfollow self or not
-					if (profile_id == results[0]['profile_id']) {
-						res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_unfollow_self,[]));
-						return;
-					}
-
+					// Get list following_id
 					var current_following_id = results[0]['following_id'];
+
 					//==========================================================
 					var isFollower = false;
 					// CHECK IF REQUEST_ACC_ID FOLLOWED THIS PROFILE OR NOT YET
 					if (utils.chkObj(current_followers_id)) {
-						if (current_followers_id.length > 0) {
-							var array_followers_id = current_followers_id.split('|');
-							if (array_followers_id.length > 0) {
-								for (i = 0; i < array_followers_id.length; i++) {
-									if (array_followers_id[i] == results[0]['profile_id']) {
-										isFollower = true;
-										break;
-									}
+						var array_followers_id = current_followers_id.split('|');
+						if (utils.chkObj(array_followers_id.length)) {
+							for (i = 0; i < array_followers_id.length; i++) {
+								if (array_followers_id[i] == req_profile_id) {
+									isFollower = true;
+									break;
 								}
 							}
 						}
@@ -466,11 +471,11 @@ module.exports = function(app, pool, config){
 					// UPDATE FOR FOLLOWERS:
 					var new_followers_id = '';
 
-					if (current_following_id.length > 0) {
+					if (utils.chkObj(current_followers_id)) {
 						var array_followers_id = current_followers_id.split('|');
-						if (array_followers_id.length > 0) {
+						if (utils.chkObj(array_followers_id.length)) {
 							for (i = 0; i < array_followers_id.length; i++) {
-								if (array_followers_id[i] != results[0]['profile_id']) {
+								if (array_followers_id[i] != req_profile_id) {
 									new_followers_id = new_followers_id + (i > 0 ? '|' : '') + array_followers_id[i];
 								}
 							}
@@ -480,9 +485,9 @@ module.exports = function(app, pool, config){
 					// UPDATE FOR FOLLOWING: PROFILE_ID
 					var new_following_id = (current_following_id.length > 0) ? '' : profile_id;
 
-					if (current_following_id.length > 0) {
+					if (utils.chkObj(current_following_id)) {
 						var array_following_id = current_following_id.split('|');
-						if (array_following_id.length > 0) {
+						if (utils.chkObj(array_following_id)) {
 							for (i = 0; i < array_following_id.length; i++) {
 								if (array_following_id[i] != profile_id) {
 									new_following_id = new_following_id + (i > 0 ? '|' : '') + array_following_id[i];
@@ -522,9 +527,9 @@ module.exports = function(app, pool, config){
 							{
 						//---------STEP 2: update to table[profile] of following profile----------
 								connection.query({
-									sql: 'UPDATE `profile` SET `following_id` = ? WHERE account_id = ?',
+									sql: 'UPDATE `profile` SET `following_id` = ? WHERE `profile_id` = ?',
 									timeout: 1000, // 1s
-									values: [new_following_id,account_id]
+									values: [new_following_id,req_profile_id]
 								}, function (error, results, fields) {
 
 									if (error) {
