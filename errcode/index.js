@@ -1,5 +1,6 @@
 module.exports={
     code_db_error: 1000,
+    code_upload_error: 1001,
     code_success: 200,
     code_null_invalid_email: 2001,
     code_null_invalid_password: 2002,
@@ -31,6 +32,9 @@ module.exports={
     errorMessage: function (code) {
     	var mess;
     	switch (code) {
+        case module.exports.code_upload_error:
+            mess = "Files is not uploaded successfully!";
+            break;
     	case module.exports.code_success:
     		mess = "Sucessfully!";
     		break;

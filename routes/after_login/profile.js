@@ -576,12 +576,10 @@ module.exports = function(app, pool, config){
 
 		// check header or url parameters or post parameters for token
 		var profile_id = req.query['profile_id'];
-		var account_id = req.decoded['account']['account_id'];
+		var req_profile_id = req.decoded['profile']['profile_id'];
 		var page_size = req.query['page_size'];
 		var page = req.query['page'];
 		var gender = req.query['gender'];
-
-		var sqlQuery = '';
 
 		var getOtherProfile = false;
 		if (utils.chkObj(profile_id) && isNaN(profile_id) == false)  {
@@ -617,21 +615,15 @@ module.exports = function(app, pool, config){
 		var limit = page_size;
 		var offset = (page - 1) * page_size;
 
-		if (getOtherProfile) { // contain profile_id in request
-			sqlQuery = 'SELECT * FROM `profile` WHERE profile_id = ? LIMIT ' + limit + ' OFFSET ' + offset;
-		} else {
-			sqlQuery = 'SELECT * FROM `profile` WHERE account_id = ? LIMIT ' + limit + ' OFFSET ' + offset;
-		}
-
 		pool.getConnection(function(err, connection) {
 			if (err) {
 				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
 			connection.query({
-				sql: sqlQuery,
+				sql: 'SELECT * FROM `profile` WHERE profile_id = ?',
 				timeout: 1000, // 1s
-				values: [getOtherProfile ? profile_id : account_id]
+				values: [getOtherProfile ? profile_id : req_profile_id]
 			}, function(error, results, fields) {
 				if (error) {
 					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
@@ -650,7 +642,9 @@ module.exports = function(app, pool, config){
 						} else {
 							connection.query({
 								sql: 'SELECT * FROM `profile` WHERE profile_id IN (' + arrayFollowersId + ')'
-								+ (needQueryGender ? ' WHERE `gender` = ' + gender : ''),
+								+ (needQueryGender ? ' WHERE `gender` = ' + gender : '')
+								+ ' ORDER BY `created_by` DESC'
+								+ ' LIMIT ' + limit + ' OFFSET ' + offset,
 								timeout: 1000, // 1s
 								values: []
 							}, function(error, results, fields) {
@@ -682,12 +676,10 @@ module.exports = function(app, pool, config){
 
 		// check header or url parameters or post parameters for token
 		var profile_id = req.query['profile_id'];
-		var account_id = req.decoded['account']['account_id'];
+		var req_profile_id = req.decoded['profile']['profile_id'];
 		var page_size = req.query['page_size'];
 		var page = req.query['page'];
 		var gender = req.query['gender'];
-
-		var sqlQuery = '';
 
 		var getOtherProfile = false;
 		if (utils.chkObj(profile_id) && isNaN(profile_id) == false)  {
@@ -723,21 +715,15 @@ module.exports = function(app, pool, config){
 		var limit = page_size;
 		var offset = (page - 1) * page_size;
 
-		if (getOtherProfile) { // contain profile_id in request
-			sqlQuery = 'SELECT * FROM `profile` WHERE profile_id = ? LIMIT ' + limit + ' OFFSET ' + offset;
-		} else {
-			sqlQuery = 'SELECT * FROM `profile` WHERE account_id = ? LIMIT ' + limit + ' OFFSET ' + offset;
-		}
-
 		pool.getConnection(function(err, connection) {
 			if (err) {
 				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
 			connection.query({
-				sql: sqlQuery,
+				sql: 'SELECT * FROM `profile` WHERE profile_id = ?',
 				timeout: 1000, // 1s
-				values: [getOtherProfile ? profile_id : account_id]
+				values: [getOtherProfile ? profile_id : req_profile_id]
 			}, function(error, results, fields) {
 				if (error) {
 					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
@@ -756,7 +742,9 @@ module.exports = function(app, pool, config){
 						} else {
 							connection.query({
 								sql: 'SELECT * FROM `profile` WHERE `profile_id` IN (' + arrayFollowingId + ')'
-								+ (needQueryGender ? ' WHERE `gender` = ' + gender : ''),
+								+ (needQueryGender ? ' WHERE `gender` = ' + gender : '')
+								+ ' ORDER BY `created_by` DESC'
+								+ ' LIMIT ' + limit + ' OFFSET ' + offset,
 								timeout: 1000, // 1s
 								values: []
 							}, function(error, results, fields) {

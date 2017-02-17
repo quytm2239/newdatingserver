@@ -39,12 +39,16 @@ module.exports = function(app, pool, config){
         console.log('Start upload image.....');
         upload(req, res, function(err) {
             if(err) {
-              console.log(err);
-              return;
+				res.status(500).send(utils.responsePhotos(errcode.code_upload_error,err,[]));
+	            return;
             }
 
 			if (utils.chkObj(req.file) == false) {
-				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_upload_file,[]));
+				res.status(400).send(utils.responsePhotos(
+					errcode.code_null_invalid_upload_file,
+					errcode.errorMessage(errcode.code_null_invalid_upload_file),
+					[])
+				);
 				return;
 			}
 
@@ -54,7 +58,7 @@ module.exports = function(app, pool, config){
             //----------------------------- save in DB -------------------------
             pool.getConnection(function(err, connection) {
                 if (err) {
-                    res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+                    res.status(500).send(utils.responsePhotos(errcode.code_db_error,'Error in database connection',[]));
                     return;
                 }
 
@@ -66,13 +70,13 @@ module.exports = function(app, pool, config){
                 }, function (error, results, fields) {
                     connection.release();
                     if (error) {
-                        res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+                        res.status(500).send(utils.responsePhotos(errcode.code_db_error,error,[]));
                     } else {
-						res.json({
-							status: errcode.code_success,
-							message: errcode.errorMessage(errcode.code_success),
-							photos: [img_url]
-						});
+						res.status(200).send(utils.responsePhotos(
+							errcode.code_success,
+							errcode.errorMessage(errcode.code_success),
+							[img_url])
+						);
                     }
                 });
             });
@@ -103,13 +107,17 @@ module.exports = function(app, pool, config){
 		console.log('Start upload image.....');
 		upload(req, res, function(err) {
 			if(err) {
-			  console.log(err);
-			  res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
-			  return;
+			  	console.log(err);
+			  	res.status(500).send(utils.responsePhotos(errcode.code_upload_error,err,[]));
+			  	return;
 			}
 
 			if (utils.chkObj(req.files) == false || (utils.chkObj(req.files) && req.files.length == 0)) {
-				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_upload_file,[]));
+				res.status(400).send(utils.responsePhotos(
+					errcode.code_null_invalid_upload_file,
+					errcode.errorMessage(errcode.code_null_invalid_upload_file),
+					[])
+				);
 				return;
 			}
 			console.log('Complete upload image.....');
@@ -121,7 +129,7 @@ module.exports = function(app, pool, config){
 			//----------------------------- save in DB -------------------------
 			pool.getConnection(function(err, connection) {
 				if (err) {
-					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+					res.status(500).send(utils.responsePhotos(errcode.code_db_error,'Error in database connection',[]));
 					return;
 				}
 				var sqlQuery = '';
@@ -133,7 +141,7 @@ module.exports = function(app, pool, config){
 				}, function (error, results, fields) {
 
 					if (error) {
-						res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+						res.status(500).send(utils.responsePhotos(errcode.code_db_error,error,[]));
 					} else if (results.length == 0) { // Does not upload photos, yet
 						sqlQuery = 'INSERT INTO `photos`(`img_origin`,`account_id`) VALUES(?,?)';
 					} else {  // Uploaded photos, before
@@ -147,7 +155,7 @@ module.exports = function(app, pool, config){
 					}, function (error, results, fields) {
 						connection.release();
 						if (error) {
-							res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+							res.status(500).send(utils.responsePhotos(errcode.code_db_error,error,[]));
 						} else {
 							res.status(200).json({
 								status: errcode.code_success,
@@ -172,13 +180,20 @@ module.exports = function(app, pool, config){
 
 		if (!(utils.chkObj(page_size)) || isNaN(page_size))
 		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
+			res.status(400).send(utils.responsePhotos(
+				errcode.code_null_invalid_page_size,
+				errcode.errorMessage(errcode.code_null_invalid_page_size),
+				[])
+			);
 			return;
 		}
 
 		if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
 		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+			res.status(400).send(utils.responsePhotos(
+				errcode.code_null_invalid_page,
+				errcode.errorMessage(errcode.code_null_invalid_page),[])
+			);
 			return;
 		}
 
@@ -187,7 +202,7 @@ module.exports = function(app, pool, config){
 
 		pool.getConnection(function(err, connection) {
 			if (err) {
-				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+				res.status(500).send(utils.responsePhotos(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
 			//------------------- GET USER's PHOTOS ------------------
@@ -198,16 +213,23 @@ module.exports = function(app, pool, config){
 			}, function (error, results, fields) {
 				connection.release();
 				if (error) {
-					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+					res.status(500).send(utils.responsePhotos(errcode.code_success,error,[]));
 				} else if (results.length == 0) {
-					res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+					res.status(200).send(utils.responsePhotos(
+						errcode.code_success,
+						errcode.errorMessage(errcode.code_success),
+						[])
+					);
 				} else {
-					var array_str = results[0]['img_origin'];
-					res.status(200).json({
-						status: errcode.code_success,
-						message: errcode.errorMessage(errcode.code_success),
-						photos: array_str.split('|')
-					});
+					var arrayPhotos = utils.chkObj(results[0]['img_origin']) ? (results[0]['img_origin']).split('|') : [];
+					if (arrayPhotos.length > 0) {
+						arrayPhotos.reverse();
+					}
+					res.status(200).send(utils.responsePhotos(
+						errcode.code_success,
+						errcode.errorMessage(errcode.code_success),
+						arrayPhotos)
+					);
 				}
 			});
 		});
