@@ -9,6 +9,7 @@ var http = require('http');
 var bodyParser = require('body-parser');
 var morgan = require('morgan');
 var mysql = require('mysql');
+var winston = require('winston');
 
 // get our predefined file
 var config = require('./config');
@@ -44,6 +45,38 @@ requireFromRoot = (function(root) {
         return require(root+"/"+resource);
     }
 })(__dirname);
+
+//=========================== write log to file ================================
+var logger = new winston.Logger({
+  transports: [
+    new winston.transports.File({
+      level:            'info',
+      filename:         './all-logs.log',
+      handleExceptions: true,
+      json:             true,
+      maxsize:          104857600, //100MB
+      maxFiles:         10,
+      colorize:         false
+    }),
+    new winston.transports.Console({
+      level:            'debug',
+      handleExceptions: true,
+      json:             false,
+      colorize:         true
+    })
+  ],
+  exitOnError: false
+});
+
+logger.stream = {
+  write: function(message, encoding){
+    logger.info(message);
+  }
+};
+
+app.use(morgan(
+	'{"remote_addr": ":remote-addr", "date": ":date[clf]", "method": ":method", "url": ":url", "http_version": ":http-version", "status": ":status", "result_length": ":res[content-length]", "user_agent": ":user-agent", "response_time": ":response-time"}', {stream: logger.stream}));
+//=========================== write log to file ================================
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
