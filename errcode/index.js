@@ -28,6 +28,8 @@ module.exports={
     code_not_allow_follow_profile_id: 2024,
     code_not_allow_follow_unfollow_self: 2025,
     code_not_allow_unfollow_profile_id: 2026,
+    code_null_invalid_fb_token: 2027,
+    code_error_fb_token: 2028,
 
     errorMessage: function (code) {
     	var mess;
@@ -115,6 +117,12 @@ module.exports={
             break;
         case module.exports.code_not_allow_unfollow_profile_id:
             mess = "you does not follow this profile, can not unfollow.";
+            break;
+        case module.exports.code_null_invalid_fb_token:
+            mess = "Please input Facebook token.";
+            break;
+        case module.exports.code_error_fb_token:
+            mess = "Facebook token is error, can not get data.";
             break;
         }
     	return mess;

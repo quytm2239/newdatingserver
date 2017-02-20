@@ -161,15 +161,16 @@ module.exports =
     createDir: function (base_path,account_id,sub_path) {
         console.log("Going to create directory in " + base_path + " for account_id: " + account_id);
         fs.mkdir(base_path + '/' + account_id + '/' + sub_path,function(err){
-           if (err) {
-              return console.error(err);
-           }
-           console.log("Directory created successfully!");
+            if (err) {
+                console.error(err);
+            } else {
+                console.log("Directory created successfully!");
+            }
         });
     },
     removeDir: function (base_path,account_id,sub_path) {
         console.log("Going to remove directory in " + base_path + " for account_id: " + account_id);
-        fs.rmdir(base_path + '/' + account_id + '/' + sub_path,function(err){
+        fs.rmdir(base_path + '/' + account_id + (module.exports.chkObj(sub_path) ? '/' + sub_path : ''),function(err){
             if (err) {
                 return console.error(err);
             }
@@ -184,5 +185,15 @@ module.exports =
                 });
             });
         });
-    }
+    },
+    createAccountDir: function (base_path,account_id,sub_path) {
+        fs.mkdir(base_path + '/' + account_id + (module.exports.chkObj(sub_path) ? '/' + sub_path : ''),function(err){
+            if (err) {
+                console.error(err);
+            } else {
+                module.exports.createDir(base_path,account_id,'avatar');
+                module.exports.createDir(base_path,account_id,'photos');
+            }
+        });
+    },
 }

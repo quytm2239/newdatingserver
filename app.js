@@ -39,7 +39,6 @@ app.use(express.static(__dirname + '/public'));
 app.use(express.static(__dirname + '/uploaded_image'));
 app.use(show_clientip);
 
-//This allows you to require files relative to the root http://goo.gl/5RkiMR
 requireFromRoot = (function(root) {
     return function(resource) {
         return require(root+"/"+resource);

@@ -9,5 +9,6 @@ module.exports={
 		debug: false
 	},
 	super_secret:'findmylove',
-	api_path: '/api'
+	api_path: '/api',
+	fb_pass: 'Facebook'
 };
