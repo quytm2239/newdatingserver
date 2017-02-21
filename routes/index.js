@@ -15,6 +15,7 @@ module.exports = function(app, pool, config){
 
 	app.use(check_token);
 	// after login
+	require(aft_path + '/notify')(app, pool, config);
 	require(aft_path + '/change_pass')(app, pool, config);
 	require(aft_path + '/profile')(app, pool, config);
 	require(aft_path + '/upload')(app, pool, config);

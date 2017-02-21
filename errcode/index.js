@@ -30,6 +30,7 @@ module.exports={
     code_not_allow_unfollow_profile_id: 2026,
     code_null_invalid_fb_token: 2027,
     code_error_fb_token: 2028,
+    code_null_invalid_device_token: 2029,
 
     errorMessage: function (code) {
     	var mess;
@@ -110,7 +111,7 @@ module.exports={
             mess = "followed profile_id does not exist.";
             break;
         case module.exports.code_not_allow_follow_profile_id:
-            mess = "you are following this profile.";
+            mess = "you are following this profile, can not follow now.";
             break;
         case module.exports.code_not_allow_follow_unfollow_self:
             mess = "you can not follow/unfollow your profile.";
@@ -123,6 +124,9 @@ module.exports={
             break;
         case module.exports.code_error_fb_token:
             mess = "Facebook token is error, can not get data.";
+            break;
+        case module.exports.code_null_invalid_device_token:
+            mess = "Device token is blank or null.";
             break;
         }
     	return mess;

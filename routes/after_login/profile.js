@@ -216,6 +216,7 @@ module.exports = function(app, pool, config){
 		});
 	});
 
+//==============================================================================
 	// ---------------------------------------------------------
 	// FOLLOW PROFILE (this is authenticated)
 	// ---------------------------------------------------------
@@ -490,7 +491,7 @@ module.exports = function(app, pool, config){
 						if (utils.chkObj(array_following_id)) {
 							for (i = 0; i < array_following_id.length; i++) {
 								if (array_following_id[i] != profile_id) {
-									new_following_id = new_following_id + (i > 0 ? '|' : '') + array_following_id[i];
+									new_following_id = new_following_id + (new_following_id.length > 0 ? '|' : '') + array_following_id[i];
 								}
 							}
 						}
@@ -734,8 +735,567 @@ module.exports = function(app, pool, config){
 					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile,[]));
 					connection.release();
 				} else { // found record
+					if (utils.chkObj(results[0]['following_id'])) {
+						var arrayFollowingId = results[0]['following_id'].split('|');
+						if (arrayFollowingId.length == 0) {
+							res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+							connection.release();
+						} else {
+							connection.query({
+								sql: 'SELECT * FROM `profile` WHERE `profile_id` IN (' + arrayFollowingId + ')'
+								+ (needQueryGender ? ' WHERE `gender` = ' + gender : '')
+								+ ' ORDER BY `created_by` DESC'
+								+ ' LIMIT ' + limit + ' OFFSET ' + offset,
+								timeout: 1000, // 1s
+								values: []
+							}, function(error, results, fields) {
+								connection.release();
+								if (error) {
+									res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+									return;
+								}
+								if (results.length == 0 || results == null) { // not found record
+									res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+								} else { // found record
+									res.status(200).send(utils.responseConvention(errcode.code_success,results));
+								}
+							});
+						}
+					} else {
+						res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+						connection.release();
+					}
+				}
+			});
+		});
+	});
+
+//==============================================================================
+	// ---------------------------------------------------------
+	// LIKE PROFILE (this is authenticated)
+	// ---------------------------------------------------------
+	rootRouter.post('/like', function(req, res) {
+
+		// check header or url parameters or post parameters for token
+		var profile_id = req.body.profile_id;
+		var req_profile_id = req.decoded['profile']['profile_id'];
+		var sqlQuery = '';
+
+		// Validate profile_id which is followed
+		if (
+			utils.chkObj(profile_id) == false || (utils.chkObj(profile_id) && isNaN(profile_id))
+		)
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_followed_profile_id,[]));
+			return;
+		}
+
+		// Validate error: like self or not
+		if (profile_id == req_profile_id) {
+			res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_unfollow_self,[]));
+			return;
+		}
+
+		pool.getConnection(function(err, connection) {
+			if (err) {
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+				return;
+			}
+
+			// who got like/dislike
+			connection.query({
+				sql: 'SELECT * FROM `profile` WHERE profile_id = ?',
+				timeout: 1000, // 1s
+				values: [profile_id]
+			}, function(error, results, fields) {
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+					return;
+				}
+				// Profile not found
+				if (utils.chkObj(results) == false) {
+					res.status(400).send(utils.responseConvention(errcode.code_not_exist_followed_profile_id,[]));
+					return;
+				}
+				// Found, get list in String
+				var current_got_likes_id = results[0]['got_likes_id'];
+				var current_got_dislikes_id = results[0]['got_dislikes_id'];
+
+				// Get info of req_profile_id follow this profile_id
+				// Actor of action
+				connection.query({
+					sql: 'SELECT * FROM `profile` WHERE `profile_id` = ?',
+					timeout: 1000, // 1s
+					values: [req_profile_id]
+				}, function(error, results, fields) {
+
+					if (error) {
+						res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+						return;
+					}
+
+					// Found, get list in String
+					var current_likes_id = results[0]['likes_id'];
+					var current_dislikes_id = results[0]['dislikes_id'];
+
+					//=================CHECK LIKE/DISLIKE OR NOT================
+					var isInLike = utils.chkObj(current_likes_id) ? current_likes_id.includes(profile_id) : false;
+					var isInDisLike = utils.chkObj(current_dislikes_id) ? current_dislikes_id.includes(profile_id) : false;
+
+					// CAN LIKE OR NOT?
+					if (isInLike) {
+						res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_profile_id,[]));
+						return;
+					}
+
+					if (isInDisLike) {
+						current_dislikes_id = str.replace(profile_id, "W3Schools");
+					}
+					//==========================================================
+
+					// UPDATE FOR ACTOR LIKE/DISLIKE: REQ_PROFILE_ID
+					var new_likes_id = '';
+					var new_dislikes_id = '';
+					new_likes_id = (utils.chkObj(current_likes_id) ? current_likes_id : '|') + profile_id + '|';
+					if (utils.chkObj(current_dislikes_id)) {
+						new_dislikes_id = current_dislikes_id.replace('|' + profile_id + '|', '|');
+					}
+
+					// UPDATE FOR WHO GOT LIKE/DISLIKE: PROFILE_ID
+					var new_got_likes_id = '';
+					var new_got_dislikes_id = '';
+
+					new_got_likes_id = (utils.chkObj(current_got_likes_id) ? current_got_likes_id : '|') + req_profile_id + '|';
+					if (utils.chkObj(current_got_dislikes_id)) {
+						new_got_dislikes_id = current_got_dislikes_id.replace('|' + req_profile_id + '|', '|');
+					}
+
+					/* PASS CHECKING -> UPDATE TO DB */
+					/* Begin transaction */
+					console.log('Transaction Start!');
+					connection.beginTransaction(function(err) {
+						if (err)
+						{
+							res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+							connection.release();
+							return;
+						}
+
+						//---------STEP 1: update [followers_id] to table[profile] of followed profile----------
+						var insertedAccountId;
+						connection.query({
+							sql: 'UPDATE `profile` SET `got_likes_id` = ?,`got_dislikes_id` = ? WHERE `profile_id` = ?',
+							timeout: 1000, // 1s
+							values: [new_got_likes_id,new_got_dislikes_id,profile_id]
+						}, function (error, results, fields) {
+
+							if (error) {
+								console.log('//---------STEP 1: update to table[profile] of Got like profile----------');
+								res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+								connection.rollback(function() {
+									console.log(error);
+								});
+								connection.release();
+							}
+							else
+							{
+						//---------STEP 2: update to table[profile] of following profile----------
+								connection.query({
+									sql: 'UPDATE `profile` SET `likes_id` = ?, `dislikes_id` = ? WHERE `profile_id` = ?',
+									timeout: 1000, // 1s
+									values: [new_likes_id, new_dislikes_id,req_profile_id]
+								}, function (error, results, fields) {
+
+									if (error) {
+										console.log('//---------STEP 2: update to table[profile] of following profile----------');
+										res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+										connection.rollback(function() {
+											console.log(error);
+										});
+										connection.release();
+									} else {
+										connection.commit(function(err) {
+											if (err)
+											{
+												console.log('Transaction Failed.');
+												res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+												connection.rollback(function() {
+													console.log(error);
+												});
+												connection.release();
+											}
+											else
+											{
+												res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+												console.log('Transaction Complete.');
+												connection.release();
+											}
+						//--------------FOLLOW SUCESSFULLY----------------------------
+										});
+									}
+								});
+							}
+						});
+					});
+					/* End transaction */
+				});
+			});
+		});
+	});
+
+	// ---------------------------------------------------------
+	// DISLIKE PROFILE (this is authenticated)
+	// ---------------------------------------------------------
+	rootRouter.post('/dislike', function(req, res) {
+
+		// check header or url parameters or post parameters for token
+		var profile_id = req.body.profile_id || req.param('profile_id') || req.headers['profile_id'];
+		var req_profile_id = req.decoded['profile']['profile_id'];
+		var account_id = req.decoded['account']['account_id'];
+		var sqlQuery = '';
+
+		// Validate request's profile_id
+		if (
+			utils.chkObj(profile_id) == false || (utils.chkObj(profile_id) && isNaN(profile_id))
+		)
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_followed_profile_id,[]));
+			return;
+		}
+
+		// Validate error: unfollow self or not
+		if (profile_id == req_profile_id) {
+			res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_unfollow_self,[]));
+			return;
+		}
+
+		pool.getConnection(function(err, connection) {
+			if (err) {
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+				return;
+			}
+			// Get info of profile_id
+			connection.query({
+				sql: 'SELECT * FROM `profile` WHERE profile_id = ?',
+				timeout: 1000, // 1s
+				values: [profile_id]
+			}, function(error, results, fields) {
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+					return;
+				}
+				// Not fount profile of profile_id
+				if (utils.chkObj(results) == false) {
+					res.status(400).send(utils.responseConvention(errcode.code_not_exist_followed_profile_id,[]));
+					return;
+				}
+				// Found, get list followers_id
+				var current_followers_id = results[0]['followers_id'];
+
+				// Get info of req_profile_id
+				connection.query({
+					sql: 'SELECT * FROM `profile` WHERE `profile_id` = ?',
+					timeout: 1000, // 1s
+					values: [req_profile_id]
+				}, function(error, results, fields) {
+
+					if (error) {
+						res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+						return;
+					}
+
+					// Get list following_id
+					var current_following_id = results[0]['following_id'];
+
+					//==========================================================
+					var isFollower = false;
+					// CHECK IF REQUEST_ACC_ID FOLLOWED THIS PROFILE OR NOT YET
+					if (utils.chkObj(current_followers_id)) {
+						var array_followers_id = current_followers_id.split('|');
+						if (utils.chkObj(array_followers_id.length)) {
+							for (i = 0; i < array_followers_id.length; i++) {
+								if (array_followers_id[i] == req_profile_id) {
+									isFollower = true;
+									break;
+								}
+							}
+						}
+					}
+					// IS FOLLOWER OR NOT?
+					if (isFollower == false) {
+						res.status(400).send(utils.responseConvention(errcode.code_not_allow_unfollow_profile_id,[]));
+						return;
+					}
+					//==========================================================
+
+					// UPDATE FOR FOLLOWERS:
+					var new_followers_id = '';
+
+					if (utils.chkObj(current_followers_id)) {
+						var array_followers_id = current_followers_id.split('|');
+						if (utils.chkObj(array_followers_id.length)) {
+							for (i = 0; i < array_followers_id.length; i++) {
+								if (array_followers_id[i] != req_profile_id) {
+									new_followers_id = new_followers_id + (i > 0 ? '|' : '') + array_followers_id[i];
+								}
+							}
+						}
+					}
+
+					// UPDATE FOR FOLLOWING: PROFILE_ID
+					var new_following_id = (current_following_id.length > 0) ? '' : profile_id;
+
+					if (utils.chkObj(current_following_id)) {
+						var array_following_id = current_following_id.split('|');
+						if (utils.chkObj(array_following_id)) {
+							for (i = 0; i < array_following_id.length; i++) {
+								if (array_following_id[i] != profile_id) {
+									new_following_id = new_following_id + (new_following_id.length > 0 ? '|' : '') + array_following_id[i];
+								}
+							}
+						}
+					}
+
+					/* PASS CHECKING -> UPDATE TO DB */
+					/* Begin transaction */
+					console.log('Transaction Start!');
+					connection.beginTransaction(function(err) {
+						if (err)
+						{
+							res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+							connection.release();
+							return;
+						}
+
+						//---------STEP 1: update [followers_id] to table[profile] of followed profile----------
+						var insertedAccountId;
+						connection.query({
+							sql: 'UPDATE `profile` SET `followers_id` = ? WHERE `profile_id` = ?',
+							timeout: 1000, // 1s
+							values: [new_followers_id ,profile_id]
+						}, function (error, results, fields) {
+
+							if (error) {
+								console.log('//---------STEP 1: update to table[profile] of followed profile----------');
+								res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+								connection.rollback(function() {
+									console.log(error);
+								});
+								connection.release();
+							}
+							else
+							{
+						//---------STEP 2: update to table[profile] of following profile----------
+								connection.query({
+									sql: 'UPDATE `profile` SET `following_id` = ? WHERE `profile_id` = ?',
+									timeout: 1000, // 1s
+									values: [new_following_id,req_profile_id]
+								}, function (error, results, fields) {
+
+									if (error) {
+										console.log('//---------STEP 2: update to table[profile] of following profile----------');
+										res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+										connection.rollback(function() {
+											console.log(error);
+										});
+										connection.release();
+									} else {
+										connection.commit(function(err) {
+											if (err)
+											{
+												console.log('Transaction Failed.');
+												res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+												connection.rollback(function() {
+													console.log(error);
+												});
+												connection.release();
+											}
+											else
+											{
+												res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+												console.log('Transaction Complete.');
+												connection.release();
+											}
+						//--------------UNFOLLOW SUCESSFULLY----------------------------
+										});
+									}
+								});
+							}
+						});
+					});
+					/* End transaction */
+				});
+			});
+		});
+	});
+
+	// ---------------------------------------------------------
+	// GET LIST OF LIKE PROFILE (this is authenticated)
+	// ---------------------------------------------------------
+	rootRouter.get('/like', function(req, res) {
+
+		// check header or url parameters or post parameters for token
+		var profile_id = req.query['profile_id'];
+		var req_profile_id = req.decoded['profile']['profile_id'];
+		var page_size = req.query['page_size'];
+		var page = req.query['page'];
+		var gender = req.query['gender'];
+
+		var getOtherProfile = false;
+		if (utils.chkObj(profile_id) && isNaN(profile_id) == false)  {
+			getOtherProfile = true
+		}
+
+		if (!(utils.chkObj(page_size)) || isNaN(page_size))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
+			return;
+		}
+
+		if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+			return;
+		}
+		var needQueryGender = false;
+		if (utils.chkObj(gender))
+		{
+			if (isNaN(gender)){
+				if (gender.length > 0 && gender != 'all'){
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+				}
+			} else if ((gender != 0 && gender != 1)) {
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+			} else if (gender != 'all' && (gender == 0 || gender == 1)) {
+				needQueryGender = true;
+			}
+		}
+		var limit = page_size;
+		var offset = (page - 1) * page_size;
+
+		pool.getConnection(function(err, connection) {
+			if (err) {
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+				return;
+			}
+			connection.query({
+				sql: 'SELECT * FROM `profile` WHERE profile_id = ?',
+				timeout: 1000, // 1s
+				values: [getOtherProfile ? profile_id : req_profile_id]
+			}, function(error, results, fields) {
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+					connection.release();
+					return;
+				}
+				if (results.length == 0 || results == null) { // not found record
+					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile,[]));
+					connection.release();
+				} else { // found record
 					if (utils.chkObj(results[0]['followers_id'])) {
 						var arrayFollowersId = results[0]['followers_id'].split('|');
+						if (arrayFollowersId.length == 0) {
+							res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+							connection.release();
+						} else {
+							connection.query({
+								sql: 'SELECT * FROM `profile` WHERE profile_id IN (' + arrayFollowersId + ')'
+								+ (needQueryGender ? ' WHERE `gender` = ' + gender : '')
+								+ ' ORDER BY `created_by` DESC'
+								+ ' LIMIT ' + limit + ' OFFSET ' + offset,
+								timeout: 1000, // 1s
+								values: []
+							}, function(error, results, fields) {
+								connection.release();
+								if (error) {
+									res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+									return;
+								}
+								if (results.length == 0 || results == null) { // not found record
+									res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+								} else { // found record
+									res.status(200).send(utils.responseConvention(errcode.code_success,results));
+								}
+							});
+						}
+					} else {
+						res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+						connection.release();
+					}
+				}
+			});
+		});
+	});
+
+	// ---------------------------------------------------------
+	// GET LIST OF DISLIKE PROFILE (this is authenticated)
+	// ---------------------------------------------------------
+	rootRouter.get('/dislike', function(req, res) {
+
+		// check header or url parameters or post parameters for token
+		var profile_id = req.query['profile_id'];
+		var req_profile_id = req.decoded['profile']['profile_id'];
+		var page_size = req.query['page_size'];
+		var page = req.query['page'];
+		var gender = req.query['gender'];
+
+		var getOtherProfile = false;
+		if (utils.chkObj(profile_id) && isNaN(profile_id) == false)  {
+			getOtherProfile = true
+		}
+
+		if (!(utils.chkObj(page_size)) || isNaN(page_size))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
+			return;
+		}
+
+		if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+			return;
+		}
+		var needQueryGender = false;
+		if (utils.chkObj(gender))
+		{
+			if (isNaN(gender)){
+				if (gender.length > 0 && gender != 'all'){
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+				}
+			} else if ((gender != 0 && gender != 1)) {
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+			} else if (gender != 'all' && (gender == 0 || gender == 1)) {
+				needQueryGender = true;
+			}
+		}
+		var limit = page_size;
+		var offset = (page - 1) * page_size;
+
+		pool.getConnection(function(err, connection) {
+			if (err) {
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+				return;
+			}
+			connection.query({
+				sql: 'SELECT * FROM `profile` WHERE profile_id = ?',
+				timeout: 1000, // 1s
+				values: [getOtherProfile ? profile_id : req_profile_id]
+			}, function(error, results, fields) {
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+					connection.release();
+					return;
+				}
+				if (results.length == 0 || results == null) { // not found record
+					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile,[]));
+					connection.release();
+				} else { // found record
+					if (utils.chkObj(results[0]['following_id'])) {
+						var arrayFollowingId = results[0]['following_id'].split('|');
 						if (arrayFollowingId.length == 0) {
 							res.status(200).send(utils.responseConvention(errcode.code_success,[]));
 							connection.release();
