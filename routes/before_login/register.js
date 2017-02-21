@@ -241,17 +241,18 @@ module.exports = function(app, pool, config){
 			}
 
 			var email_login 	= res.email;
+			var facebook_id 	= res.id;
 			var full_name 		= res.name;
 			var gender 			= res.gender == 'male' ? 0 : 1 ;
 			var birthday 		= res.birthday;
 			var avatar			= res.picture.data.url;
 
 			// Validate email_login
-			if (utils.chkObj(email_login) == false || utils.validateEmail(email_login) == false)
-			{
-				expressRes.status(400).send(utils.responseConvention(errcode.code_null_invalid_email,[]));
-				return;
-			}
+			// if (utils.chkObj(email_login) == false || utils.validateEmail(email_login) == false)
+			// {
+			// 	expressRes.status(400).send(utils.responseConvention(errcode.code_null_invalid_email,[]));
+			// 	return;
+			// }
 
 			// Validate full_name
 			if (utils.chkObj(full_name) == false) {
@@ -278,11 +279,11 @@ module.exports = function(app, pool, config){
 					return;
 				}
 
-				// CHECK [email_login] if Exist or NOT Exist
+				// CHECK [facebook_id] if Exist or NOT Exist
 				connection.query({
-					sql: 'SELECT * FROM `account` WHERE `email_login` = ?',
+					sql: 'SELECT * FROM `account` WHERE `facebook_id` = ?',
 					timeout: 5000, // 5s
-					values: [email_login]
+					values: [facebook_id]
 				}, function(error, results, fields) {
 					// error -> rollback
 					if (error) {
@@ -291,7 +292,7 @@ module.exports = function(app, pool, config){
 						return;
 					}
 
-					if (utils.chkObj(results) && results.length > 0) { // [email_login] exist
+					if (utils.chkObj(results) && results.length > 0) { // [facebook_id] exist
 						// PROCESS LOGIN VIA Facebook
 
 						var account_data = results[0];
@@ -301,7 +302,19 @@ module.exports = function(app, pool, config){
 							timeout: 2000, // 2s
 							values: [results[0]['account_id']]
 						}, function(error, results, fields) {
-							connection.release();
+
+							connection.query({
+								sql: 'UPDATE `profile` SET `latitude` = ?, `longitude` = ? WHERE `account_id` = ?',
+								timeout: 2000, // 2s
+								values: [latitude, longitude, results[0]['account_id']]
+							}, function(error, results, fields) {
+								connection.release();
+								if (error) {
+									console.log(error);
+								}
+							});
+
+
 							if (error) {
 								expressRes.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 								return;
@@ -359,10 +372,10 @@ module.exports = function(app, pool, config){
 						//--------------STEP 1: add to table[account]-------------------
 						var insertedAccountId;
 						connection.query({
-							sql: 'INSERT INTO `account`(`email_login`, `password`, `login_status`,`password_status`,`account_type`)'
-								+ 'VALUES (?,?,?,?,?)',
+							sql: 'INSERT INTO `account`(`email_login`, `password`, `login_status`,`password_status`,`account_type`,`facebook_id`)'
+								+ 'VALUES (?,?,?,?,?,?)',
 							timeout: 1000, // 1s
-							values: [email_login, utils.hashPass(config.fb_pass), 0, 0, 1] // make a default password
+							values: ['', utils.hashPass(config.fb_pass), 0, 0, 1, facebook_id] // make a default password
 						}, function (error, results, fields) {
 
 							if (error) {
@@ -413,9 +426,9 @@ module.exports = function(app, pool, config){
 
 												// PROCESS LOGIN VIA Facebook after Register successfully!
 												connection.query({
-													sql: 'SELECT * FROM `account` WHERE `email_login` = ?',
+													sql: 'SELECT * FROM `account` WHERE `facebook_id` = ?',
 													timeout: 2000, // 2s
-													values: [email_login]
+													values: [facebook_id]
 												}, function(error, results, fields) {
 													// error -> rollback
 													if (error) {
@@ -423,7 +436,7 @@ module.exports = function(app, pool, config){
 														connection.release();
 														return;
 													}
-													
+
 													var account_data = results[0];
 													// Get profile
 													connection.query({
