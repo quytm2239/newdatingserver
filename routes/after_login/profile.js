@@ -232,7 +232,7 @@ module.exports = function(app, pool, config){
 			utils.chkObj(profile_id) == false || (utils.chkObj(profile_id) && isNaN(profile_id))
 		)
 		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_followed_profile_id,[]));
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_profile_id,[]));
 			return;
 		}
 
@@ -259,7 +259,7 @@ module.exports = function(app, pool, config){
 				}
 				// Profile not found
 				if (utils.chkObj(results) == false) {
-					res.status(400).send(utils.responseConvention(errcode.code_not_exist_followed_profile_id,[]));
+					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile_id,[]));
 					return;
 				}
 				// Found, get list followers_id
@@ -277,39 +277,26 @@ module.exports = function(app, pool, config){
 						return;
 					}
 
-					// Found, get list following_id
+					// Found, get list in String
 					var current_following_id = results[0]['following_id'];
 
-					//=================CHECK FOLLOWED OR NOT====================
-					var isAllowFollow = true;
-					// CHECK IF REQUEST_ACC_ID FOLLOWED THIS PROFILE OR NOT YET
-					if (utils.chkObj(current_followers_id)) {
-						if (current_followers_id.length > 0) {
-							var array_followers_id = current_followers_id.split('|');
-							if (array_followers_id.length > 0) {
-								for (i = 0; i < array_followers_id.length; i++) {
-									if (array_followers_id[i] == req_profile_id) {
-										isAllowFollow = false;
-										break;
-									}
-								}
-							}
-						}
-					}
+					//=================CHECK LIKE/DISLIKE OR NOT================
+					var isInFollowing = utils.chkObj(current_following_id) ? current_following_id.includes('|' + profile_id + '|') : false;
+
 					// CAN FOLLOW OR NOT?
-					if (isAllowFollow == false) {
+					if (isInFollowing) {
 						res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_profile_id,[]));
 						return;
 					}
 					//==========================================================
-
-					// UPDATE FOR FOLLOWING: PROFILE_ID
+					//=================>> [PROCESS FOLLOW] <<=====================
+					// UPDATE FOR ACTOR FOLLOW/UNFOLLOW: REQ_PROFILE_ID
 					var new_following_id = '';
-					new_following_id = new_following_id + (utils.chkObj(current_following_id) ? current_following_id + '|' : '') + profile_id;
+					new_following_id = (utils.chkObj(current_following_id) ? current_following_id : '|') + profile_id + '|';
 
-					// UPDATE FOR FOLLOWERS:
+					// UPDATE FOR WHO GOT FOLLOW/UNFOLLOW: PROFILE_ID
 					var new_followers_id = '';
-					new_followers_id = new_followers_id + (utils.chkObj(current_followers_id) ? current_followers_id + '|' : '') + req_profile_id;
+					new_followers_id = (utils.chkObj(current_followers_id) ? current_followers_id : '|') + req_profile_id + '|';
 
 					/* PASS CHECKING -> UPDATE TO DB */
 					/* Begin transaction */
@@ -400,7 +387,7 @@ module.exports = function(app, pool, config){
 			utils.chkObj(profile_id) == false || (utils.chkObj(profile_id) && isNaN(profile_id))
 		)
 		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_followed_profile_id,[]));
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_profile_id,[]));
 			return;
 		}
 
@@ -427,7 +414,7 @@ module.exports = function(app, pool, config){
 				}
 				// Not fount profile of profile_id
 				if (utils.chkObj(results) == false) {
-					res.status(400).send(utils.responseConvention(errcode.code_not_exist_followed_profile_id,[]));
+					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile_id,[]));
 					return;
 				}
 				// Found, get list followers_id
@@ -445,56 +432,33 @@ module.exports = function(app, pool, config){
 						return;
 					}
 
-					// Get list following_id
+					// Found, get list in String
 					var current_following_id = results[0]['following_id'];
 
-					//==========================================================
-					var isFollower = false;
-					// CHECK IF REQUEST_ACC_ID FOLLOWED THIS PROFILE OR NOT YET
-					if (utils.chkObj(current_followers_id)) {
-						var array_followers_id = current_followers_id.split('|');
-						if (utils.chkObj(array_followers_id.length)) {
-							for (i = 0; i < array_followers_id.length; i++) {
-								if (array_followers_id[i] == req_profile_id) {
-									isFollower = true;
-									break;
-								}
-							}
-						}
-					}
-					// IS FOLLOWER OR NOT?
-					if (isFollower == false) {
+					//=================CHECK LIKE/DISLIKE OR NOT================
+					var isNotInFollowing = (utils.chkObj(current_following_id) ? current_following_id.includes('|' + profile_id + '|') : false) == false;
+
+					// CAN UNFOLLOW OR NOT?
+					if (isNotInFollowing) {
 						res.status(400).send(utils.responseConvention(errcode.code_not_allow_unfollow_profile_id,[]));
 						return;
 					}
 					//==========================================================
-
-					// UPDATE FOR FOLLOWERS:
-					var new_followers_id = '';
-
-					if (utils.chkObj(current_followers_id)) {
-						var array_followers_id = current_followers_id.split('|');
-						if (utils.chkObj(array_followers_id.length)) {
-							for (i = 0; i < array_followers_id.length; i++) {
-								if (array_followers_id[i] != req_profile_id) {
-									new_followers_id = new_followers_id + (i > 0 ? '|' : '') + array_followers_id[i];
-								}
-							}
-						}
+					//===============>> [PROCESS UNFOLLOW] <<===================
+					// UPDATE FOR ACTOR FOLLOW/UNFOLLOW: REQ_PROFILE_ID
+					var new_following_id = '';
+					if (utils.chkObj(current_following_id)) {
+						var needReplaceStr = '|' + profile_id + '|';
+						var replaceStr = (current_following_id == needReplaceStr) ? '' : '|';
+						new_following_id = current_following_id.replace(needReplaceStr,replaceStr);
 					}
 
-					// UPDATE FOR FOLLOWING: PROFILE_ID
-					var new_following_id = (current_following_id.length > 0) ? '' : profile_id;
-
-					if (utils.chkObj(current_following_id)) {
-						var array_following_id = current_following_id.split('|');
-						if (utils.chkObj(array_following_id)) {
-							for (i = 0; i < array_following_id.length; i++) {
-								if (array_following_id[i] != profile_id) {
-									new_following_id = new_following_id + (new_following_id.length > 0 ? '|' : '') + array_following_id[i];
-								}
-							}
-						}
+					// UPDATE FOR WHO GOT FOLLOW/UNFOLLOW: PROFILE_ID
+					var new_followers_id = '';
+					if (utils.chkObj(current_followers_id)) {
+						var needReplaceStr = '|' + req_profile_id + '|';
+						var replaceStr = (current_followers_id == needReplaceStr) ? '' : '|';
+						new_followers_id = current_followers_id.replace(needReplaceStr,replaceStr);
 					}
 
 					/* PASS CHECKING -> UPDATE TO DB */
@@ -636,7 +600,11 @@ module.exports = function(app, pool, config){
 					connection.release();
 				} else { // found record
 					if (utils.chkObj(results[0]['followers_id'])) {
-						var arrayFollowersId = results[0]['followers_id'].split('|');
+						// PROCESS REMOVE FIRST '|' & LAST '|'
+						var followers_str = results[0]['followers_id'];
+						followers_str = followers_str.substr(1, followers_str.length - 2);
+						var arrayFollowersId = followers_str.split('|');
+
 						if (arrayFollowersId.length == 0) {
 							res.status(200).send(utils.responseConvention(errcode.code_success,[]));
 							connection.release();
@@ -736,7 +704,11 @@ module.exports = function(app, pool, config){
 					connection.release();
 				} else { // found record
 					if (utils.chkObj(results[0]['following_id'])) {
-						var arrayFollowingId = results[0]['following_id'].split('|');
+						// PROCESS REMOVE FIRST '|' & LAST '|'
+						var following_str = results[0]['following_id'];
+						following_str = following_str.substr(1, following_str.length - 2);
+						var arrayFollowingId = following_str.split('|');
+
 						if (arrayFollowingId.length == 0) {
 							res.status(200).send(utils.responseConvention(errcode.code_success,[]));
 							connection.release();
@@ -786,13 +758,13 @@ module.exports = function(app, pool, config){
 			utils.chkObj(profile_id) == false || (utils.chkObj(profile_id) && isNaN(profile_id))
 		)
 		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_followed_profile_id,[]));
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_profile_id,[]));
 			return;
 		}
 
 		// Validate error: like self or not
 		if (profile_id == req_profile_id) {
-			res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_unfollow_self,[]));
+			res.status(400).send(utils.responseConvention(errcode.code_not_allow_like_dislike_self,[]));
 			return;
 		}
 
@@ -814,7 +786,7 @@ module.exports = function(app, pool, config){
 				}
 				// Profile not found
 				if (utils.chkObj(results) == false) {
-					res.status(400).send(utils.responseConvention(errcode.code_not_exist_followed_profile_id,[]));
+					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile_id,[]));
 					return;
 				}
 				// Found, get list in String
@@ -839,26 +811,24 @@ module.exports = function(app, pool, config){
 					var current_dislikes_id = results[0]['dislikes_id'];
 
 					//=================CHECK LIKE/DISLIKE OR NOT================
-					var isInLike = utils.chkObj(current_likes_id) ? current_likes_id.includes(profile_id) : false;
-					var isInDisLike = utils.chkObj(current_dislikes_id) ? current_dislikes_id.includes(profile_id) : false;
+					var isInLike = utils.chkObj(current_likes_id) ? current_likes_id.includes('|' + profile_id + '|') : false;
+					//var isInDisLike = utils.chkObj(current_dislikes_id) ? current_dislikes_id.includes('|' + profile_id + '|') : false;
 
 					// CAN LIKE OR NOT?
 					if (isInLike) {
-						res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_profile_id,[]));
+						res.status(400).send(utils.responseConvention(errcode.code_not_allow_like_profile_id,[]));
 						return;
 					}
-
-					if (isInDisLike) {
-						current_dislikes_id = str.replace(profile_id, "W3Schools");
-					}
 					//==========================================================
-
+					//=================>> [PROCESS LIKE] <<=====================
 					// UPDATE FOR ACTOR LIKE/DISLIKE: REQ_PROFILE_ID
 					var new_likes_id = '';
 					var new_dislikes_id = '';
 					new_likes_id = (utils.chkObj(current_likes_id) ? current_likes_id : '|') + profile_id + '|';
 					if (utils.chkObj(current_dislikes_id)) {
-						new_dislikes_id = current_dislikes_id.replace('|' + profile_id + '|', '|');
+						var needReplaceStr = '|' + profile_id + '|';
+						var replaceStr = (current_dislikes_id == needReplaceStr) ? '' : '|';
+						new_dislikes_id = current_dislikes_id.replace(needReplaceStr,replaceStr);
 					}
 
 					// UPDATE FOR WHO GOT LIKE/DISLIKE: PROFILE_ID
@@ -867,7 +837,9 @@ module.exports = function(app, pool, config){
 
 					new_got_likes_id = (utils.chkObj(current_got_likes_id) ? current_got_likes_id : '|') + req_profile_id + '|';
 					if (utils.chkObj(current_got_dislikes_id)) {
-						new_got_dislikes_id = current_got_dislikes_id.replace('|' + req_profile_id + '|', '|');
+						var needReplaceStr = '|' + req_profile_id + '|';
+						var replaceStr = (current_got_dislikes_id == needReplaceStr) ? '' : '|';
+						new_got_dislikes_id = current_got_dislikes_id.replace(needReplaceStr,replaceStr);
 					}
 
 					/* PASS CHECKING -> UPDATE TO DB */
@@ -881,7 +853,7 @@ module.exports = function(app, pool, config){
 							return;
 						}
 
-						//---------STEP 1: update [followers_id] to table[profile] of followed profile----------
+						//---------STEP 1: update new_got_likes_id,new_got_dislikes_id] to table[profile] of got like profile----------
 						var insertedAccountId;
 						connection.query({
 							sql: 'UPDATE `profile` SET `got_likes_id` = ?,`got_dislikes_id` = ? WHERE `profile_id` = ?',
@@ -890,7 +862,7 @@ module.exports = function(app, pool, config){
 						}, function (error, results, fields) {
 
 							if (error) {
-								console.log('//---------STEP 1: update to table[profile] of Got like profile----------');
+								console.log('//---------STEP 1: update new_got_likes_id,new_got_dislikes_id] to table[profile] of got like profile----------');
 								res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 								connection.rollback(function() {
 									console.log(error);
@@ -899,7 +871,7 @@ module.exports = function(app, pool, config){
 							}
 							else
 							{
-						//---------STEP 2: update to table[profile] of following profile----------
+						//---------STEP 2: update [new_likes_id, new_dislikes_id] of table[profile] of like profile----------
 								connection.query({
 									sql: 'UPDATE `profile` SET `likes_id` = ?, `dislikes_id` = ? WHERE `profile_id` = ?',
 									timeout: 1000, // 1s
@@ -907,12 +879,12 @@ module.exports = function(app, pool, config){
 								}, function (error, results, fields) {
 
 									if (error) {
-										console.log('//---------STEP 2: update to table[profile] of following profile----------');
+										console.log('//---------STEP 2: update [new_likes_id, new_dislikes_id] of table[profile] of like profile----------');
 										res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 										connection.rollback(function() {
 											console.log(error);
+											connection.release();
 										});
-										connection.release();
 									} else {
 										connection.commit(function(err) {
 											if (err)
@@ -921,8 +893,8 @@ module.exports = function(app, pool, config){
 												res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
 												connection.rollback(function() {
 													console.log(error);
+													connection.release();
 												});
-												connection.release();
 											}
 											else
 											{
@@ -930,7 +902,7 @@ module.exports = function(app, pool, config){
 												console.log('Transaction Complete.');
 												connection.release();
 											}
-						//--------------FOLLOW SUCESSFULLY----------------------------
+						//--------------LIKE SUCESSFULLY----------------------------
 										});
 									}
 								});
@@ -949,23 +921,22 @@ module.exports = function(app, pool, config){
 	rootRouter.post('/dislike', function(req, res) {
 
 		// check header or url parameters or post parameters for token
-		var profile_id = req.body.profile_id || req.param('profile_id') || req.headers['profile_id'];
+		var profile_id = req.body.profile_id;
 		var req_profile_id = req.decoded['profile']['profile_id'];
-		var account_id = req.decoded['account']['account_id'];
 		var sqlQuery = '';
 
-		// Validate request's profile_id
+		// Validate profile_id which is followed
 		if (
 			utils.chkObj(profile_id) == false || (utils.chkObj(profile_id) && isNaN(profile_id))
 		)
 		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_followed_profile_id,[]));
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_profile_id,[]));
 			return;
 		}
 
-		// Validate error: unfollow self or not
+		// Validate error: like self or not
 		if (profile_id == req_profile_id) {
-			res.status(400).send(utils.responseConvention(errcode.code_not_allow_follow_unfollow_self,[]));
+			res.status(400).send(utils.responseConvention(errcode.code_not_allow_like_dislike_self,[]));
 			return;
 		}
 
@@ -974,7 +945,8 @@ module.exports = function(app, pool, config){
 				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 				return;
 			}
-			// Get info of profile_id
+
+			// who got like/dislike
 			connection.query({
 				sql: 'SELECT * FROM `profile` WHERE profile_id = ?',
 				timeout: 1000, // 1s
@@ -984,15 +956,17 @@ module.exports = function(app, pool, config){
 					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 					return;
 				}
-				// Not fount profile of profile_id
+				// Profile not found
 				if (utils.chkObj(results) == false) {
-					res.status(400).send(utils.responseConvention(errcode.code_not_exist_followed_profile_id,[]));
+					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile_id,[]));
 					return;
 				}
-				// Found, get list followers_id
-				var current_followers_id = results[0]['followers_id'];
+				// Found, get list in String
+				var current_got_likes_id = results[0]['got_likes_id'];
+				var current_got_dislikes_id = results[0]['got_dislikes_id'];
 
-				// Get info of req_profile_id
+				// Get info of req_profile_id follow this profile_id
+				// Actor of action
 				connection.query({
 					sql: 'SELECT * FROM `profile` WHERE `profile_id` = ?',
 					timeout: 1000, // 1s
@@ -1004,56 +978,39 @@ module.exports = function(app, pool, config){
 						return;
 					}
 
-					// Get list following_id
-					var current_following_id = results[0]['following_id'];
+					// Found, get list in String
+					var current_likes_id = results[0]['likes_id'];
+					var current_dislikes_id = results[0]['dislikes_id'];
 
-					//==========================================================
-					var isFollower = false;
-					// CHECK IF REQUEST_ACC_ID FOLLOWED THIS PROFILE OR NOT YET
-					if (utils.chkObj(current_followers_id)) {
-						var array_followers_id = current_followers_id.split('|');
-						if (utils.chkObj(array_followers_id.length)) {
-							for (i = 0; i < array_followers_id.length; i++) {
-								if (array_followers_id[i] == req_profile_id) {
-									isFollower = true;
-									break;
-								}
-							}
-						}
-					}
-					// IS FOLLOWER OR NOT?
-					if (isFollower == false) {
-						res.status(400).send(utils.responseConvention(errcode.code_not_allow_unfollow_profile_id,[]));
+					//=================CHECK LIKE/DISLIKE OR NOT================
+					var isInDisLike = utils.chkObj(current_dislikes_id) ? current_dislikes_id.includes(profile_id) : false;
+
+					// CAN DISLIKE OR NOT?
+					if (isInDisLike) {
+						res.status(400).send(utils.responseConvention(errcode.code_not_allow_dislike_profile_id,[]));
 						return;
 					}
 					//==========================================================
-
-					// UPDATE FOR FOLLOWERS:
-					var new_followers_id = '';
-
-					if (utils.chkObj(current_followers_id)) {
-						var array_followers_id = current_followers_id.split('|');
-						if (utils.chkObj(array_followers_id.length)) {
-							for (i = 0; i < array_followers_id.length; i++) {
-								if (array_followers_id[i] != req_profile_id) {
-									new_followers_id = new_followers_id + (i > 0 ? '|' : '') + array_followers_id[i];
-								}
-							}
-						}
+					//================>> [PROCESS DISLIKE] <<===================
+					// UPDATE FOR ACTOR LIKE/DISLIKE: REQ_PROFILE_ID
+					var new_likes_id = '';
+					var new_dislikes_id = '';
+					new_dislikes_id = (utils.chkObj(current_dislikes_id) ? current_dislikes_id : '|') + profile_id + '|';
+					if (utils.chkObj(current_likes_id)) {
+						var needReplaceStr = '|' + profile_id + '|';
+						var replaceStr = (current_likes_id == needReplaceStr) ? '' : '|';
+						new_likes_id = current_likes_id.replace(needReplaceStr,replaceStr);
 					}
 
-					// UPDATE FOR FOLLOWING: PROFILE_ID
-					var new_following_id = (current_following_id.length > 0) ? '' : profile_id;
+					// UPDATE FOR WHO GOT LIKE/DISLIKE: PROFILE_ID
+					var new_got_likes_id = '';
+					var new_got_dislikes_id = '';
 
-					if (utils.chkObj(current_following_id)) {
-						var array_following_id = current_following_id.split('|');
-						if (utils.chkObj(array_following_id)) {
-							for (i = 0; i < array_following_id.length; i++) {
-								if (array_following_id[i] != profile_id) {
-									new_following_id = new_following_id + (new_following_id.length > 0 ? '|' : '') + array_following_id[i];
-								}
-							}
-						}
+					new_got_dislikes_id = (utils.chkObj(current_got_dislikes_id) ? current_got_dislikes_id : '|') + req_profile_id + '|';
+					if (utils.chkObj(current_got_likes_id)) {
+						var needReplaceStr = '|' + req_profile_id + '|';
+						var replaceStr = (current_got_likes_id == needReplaceStr) ? '' : '|';
+						new_got_likes_id = current_got_likes_id.replace(needReplaceStr,replaceStr);
 					}
 
 					/* PASS CHECKING -> UPDATE TO DB */
@@ -1067,16 +1024,16 @@ module.exports = function(app, pool, config){
 							return;
 						}
 
-						//---------STEP 1: update [followers_id] to table[profile] of followed profile----------
+						//---------STEP 1: update new_got_likes_id,new_got_dislikes_id] to table[profile] of got like profile----------
 						var insertedAccountId;
 						connection.query({
-							sql: 'UPDATE `profile` SET `followers_id` = ? WHERE `profile_id` = ?',
+							sql: 'UPDATE `profile` SET `got_likes_id` = ?,`got_dislikes_id` = ? WHERE `profile_id` = ?',
 							timeout: 1000, // 1s
-							values: [new_followers_id ,profile_id]
+							values: [new_got_likes_id,new_got_dislikes_id,profile_id]
 						}, function (error, results, fields) {
 
 							if (error) {
-								console.log('//---------STEP 1: update to table[profile] of followed profile----------');
+								console.log('//---------STEP 1: update new_got_likes_id,new_got_dislikes_id] to table[profile] of got like profile----------');
 								res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 								connection.rollback(function() {
 									console.log(error);
@@ -1085,20 +1042,20 @@ module.exports = function(app, pool, config){
 							}
 							else
 							{
-						//---------STEP 2: update to table[profile] of following profile----------
+						//---------STEP 2: update [new_likes_id, new_dislikes_id] of table[profile] of like profile----------
 								connection.query({
-									sql: 'UPDATE `profile` SET `following_id` = ? WHERE `profile_id` = ?',
+									sql: 'UPDATE `profile` SET `likes_id` = ?, `dislikes_id` = ? WHERE `profile_id` = ?',
 									timeout: 1000, // 1s
-									values: [new_following_id,req_profile_id]
+									values: [new_likes_id, new_dislikes_id,req_profile_id]
 								}, function (error, results, fields) {
 
 									if (error) {
-										console.log('//---------STEP 2: update to table[profile] of following profile----------');
+										console.log('//---------STEP 2: update [new_likes_id, new_dislikes_id] of table[profile] of like profile----------');
 										res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 										connection.rollback(function() {
 											console.log(error);
+											connection.release();
 										});
-										connection.release();
 									} else {
 										connection.commit(function(err) {
 											if (err)
@@ -1107,8 +1064,8 @@ module.exports = function(app, pool, config){
 												res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
 												connection.rollback(function() {
 													console.log(error);
+													connection.release();
 												});
-												connection.release();
 											}
 											else
 											{
@@ -1116,7 +1073,7 @@ module.exports = function(app, pool, config){
 												console.log('Transaction Complete.');
 												connection.release();
 											}
-						//--------------UNFOLLOW SUCESSFULLY----------------------------
+						//--------------LIKE SUCESSFULLY----------------------------
 										});
 									}
 								});
@@ -1194,14 +1151,20 @@ module.exports = function(app, pool, config){
 					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile,[]));
 					connection.release();
 				} else { // found record
-					if (utils.chkObj(results[0]['followers_id'])) {
-						var arrayFollowersId = results[0]['followers_id'].split('|');
-						if (arrayFollowersId.length == 0) {
+
+					if (utils.chkObj(results[0]['got_likes_id'])) {
+						// PROCESS REMOVE FIRST '|' & LAST '|'
+						var got_likes_str = results[0]['got_likes_id'];
+						got_likes_str = got_likes_str.substr(1, got_likes_str.length - 2);
+						var arrayGotLikeId = got_likes_str.split('|');
+
+						console.log('arrayGotLikeId:' + arrayGotLikeId);
+						if (utils.chkObj(arrayGotLikeId) == false) {
 							res.status(200).send(utils.responseConvention(errcode.code_success,[]));
 							connection.release();
 						} else {
 							connection.query({
-								sql: 'SELECT * FROM `profile` WHERE profile_id IN (' + arrayFollowersId + ')'
+								sql: 'SELECT * FROM `profile` WHERE profile_id IN (' + arrayGotLikeId + ')'
 								+ (needQueryGender ? ' WHERE `gender` = ' + gender : '')
 								+ ' ORDER BY `created_by` DESC'
 								+ ' LIMIT ' + limit + ' OFFSET ' + offset,
@@ -1294,14 +1257,17 @@ module.exports = function(app, pool, config){
 					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile,[]));
 					connection.release();
 				} else { // found record
-					if (utils.chkObj(results[0]['following_id'])) {
-						var arrayFollowingId = results[0]['following_id'].split('|');
-						if (arrayFollowingId.length == 0) {
+					if (utils.chkObj(results[0]['got_dislikes_id'])) {
+						// PROCESS REMOVE FIRST '|' & LAST '|'
+						var got_dislikes_str = results[0]['got_dislikes_id'];
+						got_dislikes_str = got_dislikes_str.substr(1, got_dislikes_str.length - 2);
+						var arrayGotDislikeId = got_dislikes_str.split('|');
+						if (utils.chkObj(arrayGotDislikeId) == false) {
 							res.status(200).send(utils.responseConvention(errcode.code_success,[]));
 							connection.release();
 						} else {
 							connection.query({
-								sql: 'SELECT * FROM `profile` WHERE `profile_id` IN (' + arrayFollowingId + ')'
+								sql: 'SELECT * FROM `profile` WHERE `profile_id` IN (' + arrayGotDislikeId + ')'
 								+ (needQueryGender ? ' WHERE `gender` = ' + gender : '')
 								+ ' ORDER BY `created_by` DESC'
 								+ ' LIMIT ' + limit + ' OFFSET ' + offset,

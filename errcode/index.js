@@ -23,14 +23,16 @@ module.exports={
     code_null_invalid_page_size: 2019,
     code_null_invalid_page: 2020,
     code_null_invalid_upload_file: 2021,
-    code_null_invalid_followed_profile_id: 2022,
-    code_not_exist_followed_profile_id: 2023,
+    code_null_invalid_profile_id: 2022,
+    code_not_exist_profile_id: 2023,
     code_not_allow_follow_profile_id: 2024,
     code_not_allow_follow_unfollow_self: 2025,
     code_not_allow_unfollow_profile_id: 2026,
     code_null_invalid_fb_token: 2027,
     code_error_fb_token: 2028,
-    code_null_invalid_device_token: 2029,
+    code_not_allow_like_profile_id: 2029,
+    code_not_allow_like_dislike_self: 2030,
+    code_not_allow_dislike_profile_id: 2031,
 
     errorMessage: function (code) {
     	var mess;
@@ -104,11 +106,11 @@ module.exports={
         case module.exports.code_null_invalid_upload_file:
             mess = "upload file is blank/null or not valid.";
             break;
-        case module.exports.code_null_invalid_followed_profile_id:
-            mess = "followed profile_id is blank/null or not valid.(number required)";
+        case module.exports.code_null_invalid_profile_id:
+            mess = "profile_id is blank/null or not valid.(number required)";
             break;
-        case module.exports.code_not_exist_followed_profile_id:
-            mess = "followed profile_id does not exist.";
+        case module.exports.code_not_exist_profile_id:
+            mess = "profile_id does not exist.";
             break;
         case module.exports.code_not_allow_follow_profile_id:
             mess = "you are following this profile, can not follow now.";
@@ -127,6 +129,15 @@ module.exports={
             break;
         case module.exports.code_null_invalid_device_token:
             mess = "Device token is blank or null.";
+            break;
+        case module.exports.code_not_allow_like_profile_id:
+            mess = "you already like this profile, can not like now.";
+            break;
+        case module.exports.code_not_allow_dislike_profile_id:
+            mess = "you already dislike this profile, can not dislike now.";
+            break;
+        case module.exports.code_not_allow_like_dislike_self:
+            mess = "you can not like/dislike your profile.";
             break;
         }
     	return mess;
