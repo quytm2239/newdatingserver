@@ -161,11 +161,12 @@ module.exports = function(app, pool, config){
 								connection.query({
 									sql: 'INSERT INTO `profile`(`full_name`,`user_status`,`avatar`,`gender`,'
 										+'`account_id`,`birthday`,`phone`,`profile_description`,`district`,`province`,'
-										+'`country`, `latitude`, `longitude`)'
-									+ ' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+										+'`country`, `latitude`, `longitude`,'
+										+'`total_followers,`total_following,`total_got_likes`,`total_got_dislikes`)'
+									+ ' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
 									timeout: 1000, // 1s
 									values: [full_name, user_status, avatar, gender, insertedAccountId,
-										birthday, phone, profile_description, district, province, country, latitude, longitude]
+										birthday, phone, profile_description, district, province, country, latitude, longitude,0,0,0,0]
 								}, function (error, results, fields) {
 
 									if (error) {
@@ -393,11 +394,12 @@ module.exports = function(app, pool, config){
 								connection.query({
 									sql: 'INSERT INTO `profile`(`full_name`,`user_status`,`avatar`,`gender`,'
 										+'`account_id`,`birthday`,`phone`,`profile_description`,`district`,`province`,'
-										+'`country`, `latitude`, `longitude`)'
-									+ ' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+										+'`country`, `latitude`, `longitude`,'
+										+'`total_followers,`total_following,`total_got_likes`,`total_got_dislikes`)'
+									+ ' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
 									timeout: 1000, // 1s
 									values: [full_name, user_status, avatar, gender, insertedAccountId,
-										formattedBirthday, phone, profile_description, district, province, country, latitude, longitude]
+										birthday, phone, profile_description, district, province, country, latitude, longitude,0,0,0,0]
 								}, function (error, results, fields) {
 
 									if (error) {
