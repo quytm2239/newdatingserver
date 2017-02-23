@@ -159,14 +159,21 @@ module.exports = function(app, pool, config){
 								insertedAccountId = results.insertId; // store account.account_id is just inserted
 						//--------------STEP 2: add to table [profile]------------------
 								connection.query({
-									sql: 'INSERT INTO `profile`(`full_name`,`user_status`,`avatar`,`gender`,'
-										+'`account_id`,`birthday`,`phone`,`profile_description`,`district`,`province`,'
-										+'`country`, `latitude`, `longitude`,'
-										+'`total_followers,`total_following,total_likes,total_dislikes,`total_got_likes`,`total_got_dislikes`)'
-									+ ' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+									sql: 'INSERT INTO `profile`'
+										+'(`full_name`,`user_status`,`avatar`,`gender`,'
+										+'`account_id`,`birthday`,`phone`,`profile_description`,'
+										+'`district`,`province`,`country`,`latitude`,`longitude`,'
+										+'`followers_id`,`following_id`,`total_followers`,`total_following`,'
+										+'`likes_id`,`dislikes_id`,`total_likes`,`total_dislikes`,'
+										+'`got_likes_id`,`got_dislikes_id`,`total_got_likes`,`total_got_dislikes`)'
+										+' VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
 									timeout: 1000, // 1s
-									values: [full_name, user_status, avatar, gender, insertedAccountId,
-										birthday, phone, profile_description, district, province, country, latitude, longitude,0,0,0,0,0,0]
+									values: [full_name,user_status,avatar,gender,
+										 	insertedAccountId,birthday,phone,profile_description,
+											district,province,country,latitude,longitude,
+											null,null,0,0,
+											null,null,0,0,
+											null,null,0,0]
 								}, function (error, results, fields) {
 
 									if (error) {
@@ -177,25 +184,41 @@ module.exports = function(app, pool, config){
 										});
 										connection.release();
 									} else {
-										connection.commit(function(err) {
-											if (err)
-											{
-												console.log('Transaction Failed.');
-												res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+										connection.query({
+											sql: 'INSERT INTO `notification`(`account_id`, `profile_id`,`device_token`)'
+												+ 'VALUES (?,?,?)',
+											timeout: 1000, // 1s
+											values: [insertedAccountId,results.insertId,'']
+										}, function (error, results, fields) {
+											if (error) {
+												console.log('//--------------STEP 3: add to table [notification]------------------');
+												res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 												connection.rollback(function() {
 													console.log(error);
 												});
 												connection.release();
+											} else {
+												connection.commit(function(err) {
+													if (err)
+													{
+														console.log('Transaction Failed.');
+														res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+														connection.rollback(function() {
+															console.log(error);
+														});
+														connection.release();
+													}
+													else
+													{
+														var path = app.get('upload_dir')
+														utils.createAccountDir(path,insertedAccountId);
+														console.log('Transaction Complete.');
+														res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+														connection.release();
+													}
+								//--------------REGISTER SUCESSFULLY----------------------------
+												});
 											}
-											else
-											{
-												var path = app.get('upload_dir')
-												utils.createAccountDir(path,insertedAccountId);
-												console.log('Transaction Complete.');
-												res.status(200).send(utils.responseConvention(errcode.code_success,[]));
-												connection.release();
-											}
-						//--------------REGISTER SUCESSFULLY----------------------------
 										});
 									}
 								});
@@ -224,6 +247,7 @@ module.exports = function(app, pool, config){
 		var phone 			= req.body.phone;
 		var profile_description	= req.body.profile_description;
 		var user_status		= req.body.user_status;
+		var device_token	= req.body.device_token;
 
 
 		if (utils.chkObj(fb_token) == false) {
@@ -392,14 +416,21 @@ module.exports = function(app, pool, config){
 								insertedAccountId = results.insertId; // store account.account_id is just inserted
 						//--------------STEP 2: add to table [profile]------------------
 								connection.query({
-									sql: 'INSERT INTO `profile`(`full_name`,`user_status`,`avatar`,`gender`,'
-										+'`account_id`,`birthday`,`phone`,`profile_description`,`district`,`province`,'
-										+'`country`, `latitude`, `longitude`,'
-										+'`total_followers,`total_following,total_likes,total_dislikes,`total_got_likes`,`total_got_dislikes`)'
-									+ ' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+									sql: 'INSERT INTO `profile`'
+										+'(`full_name`,`user_status`,`avatar`,`gender`,'
+										+'`account_id`,`birthday`,`phone`,`profile_description`,'
+										+'`district`,`province`,`country`,`latitude`,`longitude`,'
+										+'`followers_id`,`following_id`,`total_followers`,`total_following`,'
+										+'`likes_id`,`dislikes_id`,`total_likes`,`total_dislikes`,'
+										+'`got_likes_id`,`got_dislikes_id`,`total_got_likes`,`total_got_dislikes`)'
+										+' VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
 									timeout: 1000, // 1s
-									values: [full_name, user_status, avatar, gender, insertedAccountId,
-										birthday, phone, profile_description, district, province, country, latitude, longitude,0,0,0,0,0,0]
+									values: [full_name,user_status,avatar,gender,
+										 	insertedAccountId,birthday,phone,profile_description,
+											district,province,country,latitude,longitude,
+											null,null,0,0,
+											null,null,0,0,
+											null,null,0,0]
 								}, function (error, results, fields) {
 
 									if (error) {
@@ -410,66 +441,159 @@ module.exports = function(app, pool, config){
 										});
 										connection.release();
 									} else {
-										connection.commit(function(err) {
-											if (err)
-											{
-												console.log('Transaction Failed.');
-												expressRes.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+										connection.query({
+											sql: 'INSERT INTO `notification`(`account_id`, `profile_id`,`device_token`)'
+												+ 'VALUES (?,?,?)',
+											timeout: 1000, // 1s
+											values: [insertedAccountId,results.insertId,'']
+										}, function (error, results, fields) {
+											if (error) {
+												console.log('//--------------STEP 3: add to table [notification]------------------');
+												res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 												connection.rollback(function() {
 													console.log(error);
 												});
 												connection.release();
-											}
-											else
-											{
-												console.log('Transaction Complete.');
-												var path = app.get('upload_dir')
-												utils.createAccountDir(path,insertedAccountId);
-
-												// PROCESS LOGIN VIA Facebook after Register successfully!
-												connection.query({
-													sql: 'SELECT * FROM `account` WHERE `facebook_id` = ?',
-													timeout: 2000, // 2s
-													values: [facebook_id]
-												}, function(error, results, fields) {
-													// error -> rollback
-													if (error) {
-														expressRes.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+											} else {
+												connection.commit(function(err) {
+													if (err)
+													{
+														console.log('Transaction Failed.');
+														expressRes.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+														connection.rollback(function() {
+															console.log(error);
+														});
 														connection.release();
-														return;
 													}
+													else
+													{
+														console.log('Transaction Complete.');
+														var path = app.get('upload_dir')
+														utils.createAccountDir(path,insertedAccountId);
 
-													var account_data = results[0];
-													// Get profile
-													connection.query({
-														sql: 'SELECT * FROM `profile` WHERE `account_id` = ?',
-														timeout: 2000, // 2s
-														values: [results[0]['account_id']]
-													}, function(error, results, fields) {
-														connection.release();
-														if (error) {
-															expressRes.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
-															return;
-														}
-														var tokenData = {
-															'account': account_data,
-															'profile': results[0]
-														}
+														// PROCESS LOGIN VIA Facebook after Register successfully!
+														connection.query({
+															sql: 'SELECT * FROM `account` WHERE `facebook_id` = ?',
+															timeout: 2000, // 2s
+															values: [facebook_id]
+														}, function(error, results, fields) {
+															// error -> rollback
+															if (error) {
+																expressRes.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+																connection.release();
+																return;
+															}
 
-														var token = jwt.sign(tokenData, config.super_secret, {
-															expiresIn: 86400 // expires in 24 hours
+															var account_data = results[0];
+															// Get profile
+															connection.query({
+																sql: 'SELECT * FROM `profile` WHERE `account_id` = ?',
+																timeout: 2000, // 2s
+																values: [results[0]['account_id']]
+															}, function(error, results, fields) {
+
+																if (error) {
+																	expressRes.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+																	return;
+																}
+																var tokenData = {
+																	'account': account_data,
+																	'profile': results[0]
+																}
+
+																var token = jwt.sign(tokenData, config.super_secret, {
+																	expiresIn: 86400 // expires in 24 hours
+																});
+
+																expressRes.json({
+																	status: errcode.code_success,
+																	message: errcode.errorMessage(errcode.code_success),
+																	data: tokenData,
+																	token: token
+																});
+																// Process device_token
+																if (utils.chkObj(device_token)) {
+																	console.log('PROCESS UPDATE device_token');
+																	connection.query({
+																		sql: 'SELECT * FROM `notification` WHERE `device_token` = ?',
+																		timeout: 2000, // 2s
+																		values: [device_token]
+																	}, function(error, results, fields) {
+																		if (utils.chkObj(results) && results[0]['profile_id'] != profile_data['profile_id']) {
+																			var exist_notifcation_token = results[0];
+																			connection.beginTransaction(function(err) {
+																				if (err) {
+																					//res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+																					connection.release();
+																					return;
+																				}
+
+																				connection.query({
+																					sql: 'UPDATE `notification` SET `device_token` = ? WHERE `profile_id` = ?',
+																					timeout: 2000, // 2s
+																					values: [device_token,profile_data['profile_id']]
+																				}, function(error, results, fields) {
+																					if (error) {
+																						console.log('//--------------STEP 1: Update for current login -------------------');
+																						//res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+																						connection.rollback(function() {
+																							console.log(error);
+																						});
+																						connection.release();
+																						return;
+																					}
+
+																					connection.query({
+																						sql: 'UPDATE `notification` SET `device_token` = ? WHERE `profile_id` = ?',
+																						timeout: 2000, // 2s
+																						values: ['',exist_notifcation_token['profile_id']]
+																					}, function(error, results, fields) {
+																						if (error) {
+																							console.log('//--STEP 2: Update for previous account have same device_token--');
+																							//res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+																							connection.rollback(function() {
+																								console.log(error);
+																							});
+																							connection.release();
+																							return;
+																						}
+
+																						connection.commit(function(err) {
+																							if (err) {
+																								console.log('Transaction Failed.');
+																								connection.rollback(function() {
+																									console.log(error);
+																								});
+																								connection.release();
+																							} else {
+																								connection.release();
+																							}
+																						});
+																					});
+																				});
+																			});
+																		} else if (results != undefined && results != null && results.length == 0) {
+																			connection.query({
+																				sql: 'UPDATE `notification` SET `device_token` = ? WHERE `profile_id` = ?',
+																				timeout: 2000, // 2s
+																				values: [device_token,profile_data['profile_id']]
+																			}, function(error, results, fields) {
+																				connection.release();
+																				console.log(error ? error : 'update device_token successfully!');
+																			});
+																		} else {
+																			connection.release();
+																		}
+																	});
+																} else {
+																	connection.release();
+																}
+															});
 														});
-
-														expressRes.json({
-															status: errcode.code_success,
-															message: errcode.errorMessage(errcode.code_success),
-															data: tokenData,
-															token: token
-														});
-													});
+													}
+								//--------------REGISTER SUCESSFULLY----------------------------
 												});
 											}
-						//--------------REGISTER SUCESSFULLY----------------------------
 										});
 									}
 								});

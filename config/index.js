@@ -10,6 +10,5 @@ module.exports={
 	},
 	super_secret:'findmylove',
 	api_path: '/api',
-	fb_pass: 'Facebook',
-	ios_device_token: 'IOS DEVICE TOKEN'
+	fb_pass: 'Facebook'
 };

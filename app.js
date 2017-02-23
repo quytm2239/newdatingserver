@@ -16,6 +16,7 @@ var config = require('./config');
 var errcode = require('./errcode');
 var utils = require('./utils');
 var show_clientip = require('./middleware/show_clientip');
+var pushNotify = require('./utils/pushNotify');
 
 // create instance of "pool" mySql connection
 var pool = mysql.createPool(config.db_config);
@@ -26,6 +27,7 @@ app.set('super_secret', config.super_secret); // secret variable
 app.set('utils',utils);
 app.set('errcode',errcode);
 app.set('upload_dir',__dirname + '/uploaded_image');
+app.set('pushNotify',pushNotify);
 
 // setup parser for request body content
 app.use(bodyParser.urlencoded({
