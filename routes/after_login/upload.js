@@ -203,15 +203,15 @@ module.exports = function(app, pool, config){
 	});
 
 	function processSendAPS(listFollowersId_Notification,profileData){
-		pushNotify = app.get('pushNotify');
-		pushNotify.init();
+		var push_notify = require('./../../apns/push_notify');
+		push_notify.init();
 		//use valid device token to get it working
 		for (i == 0;i < listFollowersId_Notification.length;i++){
 			if (utils.chkObj(listFollowersId_Notification[i]['device_token'])) {
 				var JSONPayload = {
 				     "profile" : profileData
 				}
-				pushNotify.send({token:listFollowersId_Notification[i]['device_token'], message:Subject + 'has uploaded new photo!', payload: JSONPayload});
+				push_notify.send({token:listFollowersId_Notification[i]['device_token'], message:Subject + 'has uploaded new photo!', payload: JSONPayload});
 			}
 		}
 	}

@@ -6,8 +6,8 @@ var apnError = function(err){
 
 //com.sft.findmylove
 var options = {
-    "cert": "./../aps_pem/apns-dev-cert.pem",
-    "key":  "./../aps_pem/apns-dev-key-noenc.pem",
+    'cert': 'apns/apns-dev-cert.pem',
+    'key':  'apns/apns-dev-key-noenc.pem',
     "passphrase": null,
     "gateway": "gateway.sandbox.push.apple.com",
     "port": 2195,
@@ -21,26 +21,27 @@ var feedBackOptions = {
     "interval": 300
 };
 
-var apnConnection, feedback;
+var appProvider, apnConnection, feedback;
 
 module.exports = {
     init : function(){
-        if (!apnConnection) {
-            apnConnection = new apn.Connection(options);
+        if (!appProvider && !apnConnection) {
+            appProvider = new apn.Provider(options);
+            // apnConnection = new apn.Connection();
 
-            feedback = new apn.Feedback(feedBackOptions);
-            feedback.on("feedback", function(devices) {
-                devices.forEach(function(item) {
-                    //TODO Do something with item.device and item.time;
-                });
-            });
+            // feedback = new apn.Feedback(feedBackOptions);
+            // feedback.on("feedback", function(devices) {
+            //     devices.forEach(function(item) {
+            //         //TODO Do something with item.device and item.time;
+            //     });
+            // });
         }
     },
 
     send : function (params){
         var myDevice, note;
 
-        myDevice = new apn.Device(params.token);
+        //myDevice = new apn.Device(params.token);
         note = new apn.Notification();
 
         note.expiry = Math.floor(Date.now() / 1000) + 3600; // Expires 1 hour from now.
@@ -49,8 +50,10 @@ module.exports = {
         note.alert = params.message;
         note.payload = params.payload;
 
-        if(apnConnection) {
-            apnConnection.pushNotification(note, myDevice);
+        if(appProvider) {
+            apnProvider.send(note, params.token).then( (result) => {
+              // see documentation for an explanation of result
+            });
         }
     }
 }
