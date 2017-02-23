@@ -189,8 +189,20 @@ module.exports = function(app, pool, config){
 					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 					return;
 				}
-				var array_followers_id = (utils.chkObj(results[0]['followers_id'])) ? results[0]['followers_id'].split('|') :[];
-				var array_following_id = (utils.chkObj(results[0]['following_id'])) ? results[0]['following_id'].split('|') :[];
+
+				var array_followers_id = [];
+				if (utils.chkObj(results[0]['followers_id'])) {
+					var followers_str = results[0]['followers_id'];
+					followers_str = followers_str.substr(1, followers_str.length - 2);
+					array_followers_id = followers_str.split('|');
+				}
+
+				var array_following_id = [];
+				if (utils.chkObj(results[0]['following_id'])) {
+					var following_str = results[0]['following_id'];
+					following_str = following_str.substr(1, following_str.length - 2);
+					array_following_id = followers_str.split('|');
+				}
 
 				connection.query({
 					sql: sqlQuery,
@@ -862,6 +874,13 @@ module.exports = function(app, pool, config){
 					sub_got_dislike_str = utils.chkObj(new_got_dislikes_id) ? new_got_dislikes_id.substr(1, new_got_dislikes_id.length - 2) : '';
 					var total_got_dislikes = utils.chkObj(sub_got_dislike_str) ? sub_got_dislike_str.split('|').length : 0;
 
+					// UPDATE total_likes, total_dislikes
+					sub_like_str = utils.chkObj(new_likes_id) ? new_likes_id.substr(1, new_likes_id.length - 2) : '';
+					var total_likes = utils.chkObj(sub_like_str) ? sub_like_str.split('|').length : 0;
+
+					sub_dislike_str = utils.chkObj(new_dislikes_id) ? new_dislikes_id.substr(1, new_dislikes_id.length - 2) : '';
+					var total_dislikes = utils.chkObj(sub_dislike_str) ? sub_dislike_str.split('|').length : 0;
+
 					/* PASS CHECKING -> UPDATE TO DB */
 					/* Begin transaction */
 					console.log('Transaction Start!');
@@ -894,9 +913,9 @@ module.exports = function(app, pool, config){
 							{
 						//---------STEP 2: update [new_likes_id, new_dislikes_id] of table[profile] of like profile----------
 								connection.query({
-									sql: 'UPDATE `profile` SET `likes_id` = ?, `dislikes_id` = ? WHERE `profile_id` = ?',
+									sql: 'UPDATE `profile` SET `likes_id` = ?, `dislikes_id` = ?,`total_likes` = ?, `total_dislikes` = ? WHERE `profile_id` = ?',
 									timeout: 1000, // 1s
-									values: [new_likes_id, new_dislikes_id,req_profile_id]
+									values: [new_likes_id,new_dislikes_id,total_likes,total_dislikes,req_profile_id]
 								}, function (error, results, fields) {
 
 									if (error) {
@@ -1041,6 +1060,13 @@ module.exports = function(app, pool, config){
 					sub_got_dislike_str = utils.chkObj(new_got_dislikes_id) ? new_got_dislikes_id.substr(1, new_got_dislikes_id.length - 2) : '';
 					var total_got_dislikes = utils.chkObj(sub_got_dislike_str) ? sub_got_dislike_str.split('|').length : 0;
 
+					// UPDATE total_likes, total_dislikes
+					sub_like_str = utils.chkObj(new_likes_id) ? new_likes_id.substr(1, new_likes_id.length - 2) : '';
+					var total_likes = utils.chkObj(sub_like_str) ? sub_like_str.split('|').length : 0;
+
+					sub_dislike_str = utils.chkObj(new_dislikes_id) ? new_dislikes_id.substr(1, new_dislikes_id.length - 2) : '';
+					var total_dislikes = utils.chkObj(sub_dislike_str) ? sub_dislike_str.split('|').length : 0;
+
 					/* PASS CHECKING -> UPDATE TO DB */
 					/* Begin transaction */
 					console.log('Transaction Start!');
@@ -1073,9 +1099,9 @@ module.exports = function(app, pool, config){
 							{
 						//---------STEP 2: update [new_likes_id, new_dislikes_id] of table[profile] of like profile----------
 								connection.query({
-									sql: 'UPDATE `profile` SET `likes_id` = ?, `dislikes_id` = ? WHERE `profile_id` = ?',
+									sql: 'UPDATE `profile` SET `likes_id` = ?, `dislikes_id` = ?,`total_likes` = ?, `total_dislikes` = ? WHERE `profile_id` = ?',
 									timeout: 1000, // 1s
-									values: [new_likes_id, new_dislikes_id,req_profile_id]
+									values: [new_likes_id,new_dislikes_id,total_likes,total_dislikes,req_profile_id]
 								}, function (error, results, fields) {
 
 									if (error) {
