@@ -153,15 +153,47 @@ module.exports = function(app, pool, config){
 						timeout: 1000, // 1s
 						values:[img_url_concat,account_id]
 					}, function (error, results, fields) {
-						connection.release();
+
 						if (error) {
 							res.status(500).send(utils.responsePhotos(errcode.code_db_error,error,[]));
+							connection.release();
 						} else {
+
+							connection.query({
+								sql: 'SELECT * FROM `profile` WHERE `account_id` = ?',
+								timeout: 1000, // 1s
+								values:[account_id]
+							}, function (error, results, fields) {
+								if (error) {
+									connection.release();
+									return;
+								}
+								if (utils.chkObj(results)) {
+									// PROCESS REMOVE FIRST '|' & LAST '|'
+									var followers_str = results[0]['followers_id'];
+									followers_str = followers_str.substr(1, followers_str.length - 2);
+									var arrayFollowersId = followers_str.split('|');
+
+									var profile_data = results[0];
+									connection.query({
+										sql: 'SELECT * FROM `notification` WHERE `profile_id` in (' + arrayFollowersId + ')',
+										timeout: 1000, // 1s
+										values:[]
+									}, function (error, results, fields) {
+										connection.release();
+										if (utils.chkObj(results)) {
+											processSendAPS(results,profile_data);
+										}
+									});
+								}
+							});
+
 							res.status(200).json({
 								status: errcode.code_success,
 								message: errcode.errorMessage(errcode.code_success),
 								photos: img_url_concat.split('|')
 							});
+
 						}
 					});
 				});
@@ -169,6 +201,20 @@ module.exports = function(app, pool, config){
 			//------------------------------------------------------------------
 		});
 	});
+
+	function processSendAPS(listFollowersId_Notification,profileData){
+		pushNotify = app.get('pushNotify');
+		pushNotify.init();
+		//use valid device token to get it working
+		for (i == 0;i < listFollowersId_Notification.length;i++){
+			if (utils.chkObj(listFollowersId_Notification[i]['device_token'])) {
+				var JSONPayload = {
+				     "profile" : profileData
+				}
+				pushNotify.send({token:listFollowersId_Notification[i]['device_token'], message:Subject + 'has uploaded new photo!', payload: JSONPayload});
+			}
+		}
+	}
 
 	// GET PHOTOS
 	rootRouter.get('/photos', function(req, res) {

@@ -4,9 +4,10 @@ var apnError = function(err){
     console.log("APN Error:", err);
 }
 
+//com.sft.findmylove
 var options = {
-    "cert": "cert.pem",
-    "key":  "key.pem",
+    "cert": "./../aps_pem/apns-dev-cert.pem",
+    "key":  "./../aps_pem/apns-dev-key-noenc.pem",
     "passphrase": null,
     "gateway": "gateway.sandbox.push.apple.com",
     "port": 2195,
@@ -24,14 +25,16 @@ var apnConnection, feedback;
 
 module.exports = {
     init : function(){
-        apnConnection = new apn.Connection(options);
+        if (!apnConnection) {
+            apnConnection = new apn.Connection(options);
 
-        feedback = new apn.Feedback(feedBackOptions);
-        feedback.on("feedback", function(devices) {
-            devices.forEach(function(item) {
-                //TODO Do something with item.device and item.time;
+            feedback = new apn.Feedback(feedBackOptions);
+            feedback.on("feedback", function(devices) {
+                devices.forEach(function(item) {
+                    //TODO Do something with item.device and item.time;
+                });
             });
-        });
+        }
     },
 
     send : function (params){
@@ -44,7 +47,7 @@ module.exports = {
         note.badge = 1;
         note.sound = "ping.aiff";
         note.alert = params.message;
-        note.payload = {'messageFrom': params.from};
+        note.payload = params.payload;
 
         if(apnConnection) {
             apnConnection.pushNotification(note, myDevice);
@@ -56,5 +59,10 @@ module.exports = {
 pushNotify = require("./pushNotify");
 pushNotify.init();
 //use valid device token to get it working
-pushNotify.process({token:'', message:'Test message', from: 'sender'});
+pushNotify.send({token:'', message:'Test message', from: 'sender'});
+
+{
+     "aps" : { "alert" : "This is the alert text", "badge" : 1, "sound" : "default" },
+     "server" : { "serverId" : 1, "name" : "Server name")
+}
 */
