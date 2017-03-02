@@ -6,13 +6,14 @@ var apnError = function(err){
 
 //com.sft.findmylove
 var options = {
-    'cert': 'apns/apns-dev-cert.pem',
-    'key':  'apns/apns-dev-key-noenc.pem',
+    'cert': 'apns/FindLove.pem',
+    'key':  'apns/FindLove_key_nopass.pem',
     "passphrase": null,
     "gateway": "gateway.sandbox.push.apple.com",
-    "port": 2195,
     "enhanced": true,
-    "cacheLength": 5
+    "cacheLength": 5,
+    'production': false,
+    'fastMode':true
   };
 options.errorCallback = apnError;
 
@@ -21,12 +22,13 @@ var feedBackOptions = {
     "interval": 300
 };
 
-var appProvider, apnConnection, feedback;
+var apnProvider, apnConnection, feedback;
 
 module.exports = {
+
     init : function(){
-        if (!appProvider && !apnConnection) {
-            appProvider = new apn.Provider(options);
+        if (!apnProvider) {
+            apnProvider = new apn.Provider(options);
             // apnConnection = new apn.Connection();
 
             // feedback = new apn.Feedback(feedBackOptions);
@@ -41,6 +43,25 @@ module.exports = {
     send : function (params){
         var myDevice, note;
 
+        note = new apn.Notification();
+
+        note.expiry = Math.floor(Date.now() / 1000) + 3600; // Expires 1 hour from now.
+        note.badge = 1;
+        note.sound = "ping.aiff";
+        note.alert = params.message;
+        note.payload = params.payload;
+
+        if(apnProvider) {
+            apnProvider.send(note, params.token).then( (result) => {
+              // see documentation for an explanation of result
+                console.log(result.failed);
+            });
+        }
+    },
+
+    sendMultipToken : function (params){
+        var myDevice, note;
+
         //myDevice = new apn.Device(params.token);
         note = new apn.Notification();
 
@@ -50,9 +71,10 @@ module.exports = {
         note.alert = params.message;
         note.payload = params.payload;
 
-        if(appProvider) {
+        if(apnProvider) {
             apnProvider.send(note, params.token).then( (result) => {
               // see documentation for an explanation of result
+                console.log(result.failed);
             });
         }
     }

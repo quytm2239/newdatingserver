@@ -768,6 +768,23 @@ module.exports = function(app, pool, config){
 	});
 
 //==============================================================================
+function processSendAPS(listFollowersId_Notification,profileData,action){
+	var push_notify = require('./../../apns/push_notify');
+	push_notify.init();
+	//use valid device token to get it working
+	for (i = 0 ; i < listFollowersId_Notification.length ; i++){
+		var device_token = listFollowersId_Notification[i]['device_token'];
+		console.log('device_token: ' + device_token);
+		if (utils.chkObj(device_token)) {
+			var JSONPayload = {
+				 "profile" : profileData
+			}
+			console.log(device_token);
+			push_notify.send({token:listFollowersId_Notification[i]['device_token'], message: profileData['full_name'] + ' has ' + action + ' your profile!', payload: JSONPayload});
+		}
+	}
+}
+//==============================================================================
 	// ---------------------------------------------------------
 	// LIKE PROFILE (this is authenticated)
 	// ---------------------------------------------------------
@@ -814,6 +831,7 @@ module.exports = function(app, pool, config){
 					res.status(400).send(utils.responseConvention(errcode.code_not_exist_profile_id,[]));
 					return;
 				}
+
 				// Found, get list in String
 				var current_got_likes_id = results[0]['got_likes_id'];
 				var current_got_dislikes_id = results[0]['got_dislikes_id'];
@@ -831,6 +849,8 @@ module.exports = function(app, pool, config){
 						return;
 					}
 
+					var act_like_full_name = results[0]['full_name'];
+					var act_like_avatar = results[0]['avatar'];
 					// Found, get list in String
 					var current_likes_id = results[0]['likes_id'];
 					var current_dislikes_id = results[0]['dislikes_id'];
@@ -913,7 +933,7 @@ module.exports = function(app, pool, config){
 							{
 						//---------STEP 2: update [new_likes_id, new_dislikes_id] of table[profile] of like profile----------
 								connection.query({
-									sql: 'UPDATE `profile` SET `likes_id` = ?, `dislikes_id` = ?,`total_likes` = ?, `total_dislikes` = ? WHERE `profile_id` = ?',
+									sql: 'UPDATE `profile` SET `likes_id` = ?,`dislikes_id` = ?,`total_likes` = ?,`total_dislikes` = ? WHERE `profile_id` = ?',
 									timeout: 1000, // 1s
 									values: [new_likes_id,new_dislikes_id,total_likes,total_dislikes,req_profile_id]
 								}, function (error, results, fields) {
@@ -926,23 +946,68 @@ module.exports = function(app, pool, config){
 											connection.release();
 										});
 									} else {
-										connection.commit(function(err) {
-											if (err)
-											{
-												console.log('Transaction Failed.');
-												res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+										connection.query({
+											sql: 'INSERT INTO `alert`(`profile_id`,`make_alert_id`,`alert_content`,`avatar`) VALUES(?,?,?)',
+											timeout: 1000, // 1s
+											values: [profile_id,req_profile_id,act_like_full_name + ' has liked you!']
+										}, function (error, results, fields) {
+											if (error) {
+												console.log('//---------STEP 2: update [new_likes_id, new_dislikes_id] of table[profile] of like profile----------');
+												res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 												connection.rollback(function() {
 													console.log(error);
 													connection.release();
 												});
+											} else {
+												connection.commit(function(err) {
+													if (err)
+													{
+														console.log('Transaction Failed.');
+														res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+														connection.rollback(function() {
+															console.log(error);
+															connection.release();
+														});
+													}
+													else
+													{
+
+														connection.query({
+															sql: 'SELECT * FROM `profile` WHERE `account_id` = ?',
+															timeout: 1000, // 1s
+															values:[account_id]
+														}, function (error, results, fields) {
+															if (error) {
+																connection.release();
+																return;
+															}
+															if (utils.chkObj(results)) {
+																// PROCESS REMOVE FIRST '|' & LAST '|'
+																var followers_str = results[0]['followers_id'];
+																followers_str = followers_str.substr(1, followers_str.length - 2);
+																var arrayFollowersId = followers_str.split('|');
+
+																var profile_data = results[0];
+																connection.query({
+																	sql: 'SELECT * FROM `notification` WHERE `profile_id` in (' + arrayFollowersId + ')',
+																	timeout: 1000, // 1s
+																	values:[]
+																}, function (error, results, fields) {
+																	connection.release();
+																	if (utils.chkObj(results)) {
+																		processSendAPS(results,profile_data,'liked');
+																	}
+																});
+															}
+														});
+
+														res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+														console.log('Transaction Complete.');
+														connection.release();
+													}
+								//--------------LIKE SUCESSFULLY----------------------------
+												});
 											}
-											else
-											{
-												res.status(200).send(utils.responseConvention(errcode.code_success,[]));
-												console.log('Transaction Complete.');
-												connection.release();
-											}
-						//--------------LIKE SUCESSFULLY----------------------------
 										});
 									}
 								});
@@ -1017,6 +1082,8 @@ module.exports = function(app, pool, config){
 						res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
 						return;
 					}
+
+					var act_dislike_full_name = results[0]['full_name'];
 
 					// Found, get list in String
 					var current_likes_id = results[0]['likes_id'];
@@ -1112,23 +1179,67 @@ module.exports = function(app, pool, config){
 											connection.release();
 										});
 									} else {
-										connection.commit(function(err) {
-											if (err)
-											{
-												console.log('Transaction Failed.');
-												res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+										connection.query({
+											sql: 'INSERT INTO `alert`(`profile_id`,`make_alert_id`,`alert_content`,`avatar`) VALUES(?,?,?)',
+											timeout: 1000, // 1s
+											values: [profile_id,req_profile_id,act_dislike_full_name + ' has disliked you!']
+										}, function (error, results, fields) {
+											if (error) {
+												console.log('//---------STEP 2: update [new_likes_id, new_dislikes_id] of table[profile] of like profile----------');
+												res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
 												connection.rollback(function() {
 													console.log(error);
 													connection.release();
 												});
+											} else {
+												connection.commit(function(err) {
+													if (err)
+													{
+														console.log('Transaction Failed.');
+														res.status(500).send(utils.responseWithMessage(errcode.code_db_error,err,[]));
+														connection.rollback(function() {
+															console.log(error);
+															connection.release();
+														});
+													}
+													else
+													{
+														connection.query({
+															sql: 'SELECT * FROM `profile` WHERE `account_id` = ?',
+															timeout: 1000, // 1s
+															values:[account_id]
+														}, function (error, results, fields) {
+															if (error) {
+																connection.release();
+																return;
+															}
+															if (utils.chkObj(results)) {
+																// PROCESS REMOVE FIRST '|' & LAST '|'
+																var followers_str = results[0]['followers_id'];
+																followers_str = followers_str.substr(1, followers_str.length - 2);
+																var arrayFollowersId = followers_str.split('|');
+
+																var profile_data = results[0];
+																connection.query({
+																	sql: 'SELECT * FROM `notification` WHERE `profile_id` in (' + arrayFollowersId + ')',
+																	timeout: 1000, // 1s
+																	values:[]
+																}, function (error, results, fields) {
+																	connection.release();
+																	if (utils.chkObj(results)) {
+																		processSendAPS(results,profile_data,'disliked');
+																	}
+																});
+															}
+														});
+
+														res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+														console.log('Transaction Complete.');
+														connection.release();
+													}
+								//--------------LIKE SUCESSFULLY----------------------------
+												});
 											}
-											else
-											{
-												res.status(200).send(utils.responseConvention(errcode.code_success,[]));
-												console.log('Transaction Complete.');
-												connection.release();
-											}
-						//--------------LIKE SUCESSFULLY----------------------------
 										});
 									}
 								});
@@ -1345,6 +1456,59 @@ module.exports = function(app, pool, config){
 						res.status(200).send(utils.responseConvention(errcode.code_success,[]));
 						connection.release();
 					}
+				}
+			});
+		});
+	});
+
+//==============================================================================
+// ---------------------------------------------------------
+// GET LIST OF LIKE PROFILE (this is authenticated)
+// ---------------------------------------------------------
+	rootRouter.get('/alert', function(req, res) {
+
+		// check header or url parameters or post parameters for token
+		var req_profile_id = req.decoded['profile']['profile_id'];
+		var page_size = req.query['page_size'];
+		var page = req.query['page'];
+
+		if (!(utils.chkObj(page_size)) || isNaN(page_size) || ( isNaN(page) == false && page <= 0))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
+			return;
+		}
+
+		if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+			return;
+		}
+
+		var limit = page_size;
+		var offset = (page - 1) * page_size;
+
+		pool.getConnection(function(err, connection) {
+			if (err) {
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+				return;
+			}
+			connection.query({
+				sql: 'SELECT * FROM `alert` WHERE profile_id = ?'
+				+ ' ORDER BY `created_by` DESC'
+				+ ' LIMIT ' + limit + ' OFFSET ' + offset,
+				timeout: 1000, // 1s
+				values: [req_profile_id]
+			}, function(error, results, fields) {
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+					connection.release();
+					return;
+				}
+				connection.release();
+				if (results.length == 0 || results == null) { // not found record
+					res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+				} else { // found record
+					res.status(200).send(utils.responseConvention(errcode.code_success,results));
 				}
 			});
 		});
