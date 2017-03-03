@@ -191,17 +191,21 @@ module.exports = function(app, pool, config){
 				}
 
 				var array_followers_id = [];
-				if (utils.chkObj(results[0]['followers_id'])) {
-					var followers_str = results[0]['followers_id'];
-					followers_str = followers_str.substr(1, followers_str.length - 2);
-					array_followers_id = followers_str.split('|');
-				}
-
 				var array_following_id = [];
-				if (utils.chkObj(results[0]['following_id'])) {
-					var following_str = results[0]['following_id'];
-					following_str = following_str.substr(1, following_str.length - 2);
-					array_following_id = followers_str.split('|');
+				
+				if (utils.chkObj(results)) {
+					if (utils.chkObj(results[0]['followers_id'])) {
+						var followers_str = results[0]['followers_id'];
+						followers_str = followers_str.substr(1, followers_str.length - 2);
+						array_followers_id = followers_str.split('|');
+					}
+
+
+					if (utils.chkObj(results[0]['following_id'])) {
+						var following_str = results[0]['following_id'];
+						following_str = following_str.substr(1, following_str.length - 2);
+						array_following_id = followers_str.split('|');
+					}
 				}
 
 				connection.query({
