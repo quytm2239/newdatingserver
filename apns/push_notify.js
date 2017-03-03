@@ -9,10 +9,10 @@ var options = {
     'cert': 'apns/FindLove.pem',
     'key':  'apns/FindLove_key_nopass.pem',
     "passphrase": null,
-    "gateway": "gateway.sandbox.push.apple.com",
+    "gateway": "gateway.push.apple.com",
     "enhanced": true,
     "cacheLength": 5,
-    'production': false,
+    'production': true,
     'fastMode':true
   };
 options.errorCallback = apnError;
@@ -50,6 +50,7 @@ module.exports = {
         note.sound = "ping.aiff";
         note.alert = params.message;
         note.payload = params.payload;
+        note.topic = "com.NhaDao.FindMyLove";
 
         if(apnProvider) {
             apnProvider.send(note, params.token).then( (result) => {
@@ -70,6 +71,7 @@ module.exports = {
         note.sound = "ping.aiff";
         note.alert = params.message;
         note.payload = params.payload;
+        note.topic = "com.NhaDao.FindMyLove";
 
         if(apnProvider) {
             apnProvider.send(note, params.token).then( (result) => {
