@@ -768,20 +768,16 @@ module.exports = function(app, pool, config){
 	});
 
 //==============================================================================
-function processSendAPS(listFollowersId_Notification,profileData,action){
+function processSendAPS(list_Notification,profileData,action){
 	var push_notify = require('./../../apns/push_notify');
 	push_notify.init();
 	//use valid device token to get it working
-	for (i = 0 ; i < listFollowersId_Notification.length ; i++){
-		var device_token = listFollowersId_Notification[i]['device_token'];
-		console.log('device_token: ' + device_token);
-		if (utils.chkObj(device_token)) {
-			var JSONPayload = {
-				 "profile" : profileData
-			}
-			console.log(device_token);
-			push_notify.send({token:listFollowersId_Notification[i]['device_token'], message: profileData['full_name'] + ' has ' + action + ' your profile!', payload: JSONPayload});
+	var device_token = list_Notification[0]['device_token'];
+	if (utils.chkObj(device_token)) {
+		var JSONPayload = {
+			 "profile" : profileData
 		}
+		push_notify.send({token:device_token, message: profileData['full_name'] + ' has ' + action + ' your profile!', payload: JSONPayload});
 	}
 }
 //==============================================================================
@@ -849,6 +845,7 @@ function processSendAPS(listFollowersId_Notification,profileData,action){
 						return;
 					}
 
+					var req_profile_data = results[0];
 					var act_like_full_name = results[0]['full_name'];
 					var act_like_avatar = results[0]['avatar'];
 					// Found, get list in String
@@ -947,9 +944,9 @@ function processSendAPS(listFollowersId_Notification,profileData,action){
 										});
 									} else {
 										connection.query({
-											sql: 'INSERT INTO `alert`(`profile_id`,`make_alert_id`,`alert_content`,`avatar`) VALUES(?,?,?)',
+											sql: 'INSERT INTO `alert`(`profile_id`,`make_alert_id`,`alert_content`,`avatar`) VALUES(?,?,?,?)',
 											timeout: 1000, // 1s
-											values: [profile_id,req_profile_id,act_like_full_name + ' has liked you!']
+											values: [profile_id,req_profile_id,act_like_full_name + ' has liked you!',act_like_avatar]
 										}, function (error, results, fields) {
 											if (error) {
 												console.log('//---------STEP 2: update [new_likes_id, new_dislikes_id] of table[profile] of like profile----------');
@@ -971,39 +968,19 @@ function processSendAPS(listFollowersId_Notification,profileData,action){
 													}
 													else
 													{
-
 														connection.query({
-															sql: 'SELECT * FROM `profile` WHERE `account_id` = ?',
+															sql: 'SELECT * FROM `notification` WHERE `profile_id` = ?',
 															timeout: 1000, // 1s
-															values:[account_id]
+															values:[profile_id]
 														}, function (error, results, fields) {
-															if (error) {
-																connection.release();
-																return;
-															}
+															connection.release();
 															if (utils.chkObj(results)) {
-																// PROCESS REMOVE FIRST '|' & LAST '|'
-																var followers_str = results[0]['followers_id'];
-																followers_str = followers_str.substr(1, followers_str.length - 2);
-																var arrayFollowersId = followers_str.split('|');
-
-																var profile_data = results[0];
-																connection.query({
-																	sql: 'SELECT * FROM `notification` WHERE `profile_id` in (' + arrayFollowersId + ')',
-																	timeout: 1000, // 1s
-																	values:[]
-																}, function (error, results, fields) {
-																	connection.release();
-																	if (utils.chkObj(results)) {
-																		processSendAPS(results,profile_data,'liked');
-																	}
-																});
+																processSendAPS(results,req_profile_data,'liked');
 															}
 														});
 
 														res.status(200).send(utils.responseConvention(errcode.code_success,[]));
 														console.log('Transaction Complete.');
-														connection.release();
 													}
 								//--------------LIKE SUCESSFULLY----------------------------
 												});
@@ -1083,8 +1060,9 @@ function processSendAPS(listFollowersId_Notification,profileData,action){
 						return;
 					}
 
+					var req_profile_data = results[0];
 					var act_dislike_full_name = results[0]['full_name'];
-
+					var act_dislike_avatar = results[0]['avatar'];
 					// Found, get list in String
 					var current_likes_id = results[0]['likes_id'];
 					var current_dislikes_id = results[0]['dislikes_id'];
@@ -1180,9 +1158,9 @@ function processSendAPS(listFollowersId_Notification,profileData,action){
 										});
 									} else {
 										connection.query({
-											sql: 'INSERT INTO `alert`(`profile_id`,`make_alert_id`,`alert_content`,`avatar`) VALUES(?,?,?)',
+											sql: 'INSERT INTO `alert`(`profile_id`,`make_alert_id`,`alert_content`,`avatar`) VALUES(?,?,?,?)',
 											timeout: 1000, // 1s
-											values: [profile_id,req_profile_id,act_dislike_full_name + ' has disliked you!']
+											values: [profile_id,req_profile_id,act_dislike_full_name + ' has disliked you!',act_dislike_avatar]
 										}, function (error, results, fields) {
 											if (error) {
 												console.log('//---------STEP 2: update [new_likes_id, new_dislikes_id] of table[profile] of like profile----------');
@@ -1205,37 +1183,18 @@ function processSendAPS(listFollowersId_Notification,profileData,action){
 													else
 													{
 														connection.query({
-															sql: 'SELECT * FROM `profile` WHERE `account_id` = ?',
+															sql: 'SELECT * FROM `notification` WHERE `profile_id` = ?',
 															timeout: 1000, // 1s
-															values:[account_id]
+															values:[profile_id]
 														}, function (error, results, fields) {
-															if (error) {
-																connection.release();
-																return;
-															}
+															connection.release();
 															if (utils.chkObj(results)) {
-																// PROCESS REMOVE FIRST '|' & LAST '|'
-																var followers_str = results[0]['followers_id'];
-																followers_str = followers_str.substr(1, followers_str.length - 2);
-																var arrayFollowersId = followers_str.split('|');
-
-																var profile_data = results[0];
-																connection.query({
-																	sql: 'SELECT * FROM `notification` WHERE `profile_id` in (' + arrayFollowersId + ')',
-																	timeout: 1000, // 1s
-																	values:[]
-																}, function (error, results, fields) {
-																	connection.release();
-																	if (utils.chkObj(results)) {
-																		processSendAPS(results,profile_data,'disliked');
-																	}
-																});
+																processSendAPS(results,req_profile_data,'disliked');
 															}
 														});
 
 														res.status(200).send(utils.responseConvention(errcode.code_success,[]));
 														console.log('Transaction Complete.');
-														connection.release();
 													}
 								//--------------LIKE SUCESSFULLY----------------------------
 												});
