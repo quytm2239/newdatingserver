@@ -192,7 +192,7 @@ module.exports = function(app, pool, config){
 
 				var array_followers_id = [];
 				var array_following_id = [];
-				
+
 				if (utils.chkObj(results)) {
 					if (utils.chkObj(results[0]['followers_id'])) {
 						var followers_str = results[0]['followers_id'];
@@ -278,7 +278,7 @@ module.exports = function(app, pool, config){
 					return;
 				}
 				// Found, get list followers_id
-				var current_followers_id = results[0]['followers_id'];
+				var current_followers_id = utils.chkObj(results[0]['followers_id']) ? results[0]['followers_id'] : '';
 
 				// Get info of req_profile_id follow this profile_id
 				connection.query({
@@ -293,7 +293,7 @@ module.exports = function(app, pool, config){
 					}
 
 					// Found, get list in String
-					var current_following_id = results[0]['following_id'];
+					var current_following_id = utils.chkObj(results[0]['following_id']) ? results[0]['following_id'] : '';
 
 					//=================CHECK LIKE/DISLIKE OR NOT================
 					var isInFollowing = utils.chkObj(current_following_id) ? current_following_id.includes('|' + profile_id + '|') : false;
@@ -440,7 +440,7 @@ module.exports = function(app, pool, config){
 					return;
 				}
 				// Found, get list followers_id
-				var current_followers_id = results[0]['followers_id'];
+				var current_followers_id = utils.chkObj(results[0]['followers_id']) ? results[0]['followers_id'] : '';
 
 				// Get info of req_profile_id
 				connection.query({
@@ -455,7 +455,7 @@ module.exports = function(app, pool, config){
 					}
 
 					// Found, get list in String
-					var current_following_id = results[0]['following_id'];
+					var current_following_id = utils.chkObj(results[0]['following_id']) ? results[0]['following_id'] : '';
 
 					//=================CHECK LIKE/DISLIKE OR NOT================
 					var isNotInFollowing = (utils.chkObj(current_following_id) ? current_following_id.includes('|' + profile_id + '|') : false) == false;
@@ -833,8 +833,8 @@ function processSendAPS(list_Notification,profileData,action){
 				}
 
 				// Found, get list in String
-				var current_got_likes_id = results[0]['got_likes_id'];
-				var current_got_dislikes_id = results[0]['got_dislikes_id'];
+				var current_got_likes_id = utils.chkObj(results[0]['got_likes_id']) ? results[0]['got_likes_id'] : '';
+				var current_got_dislikes_id =  utils.chkObj(results[0]['got_dislikes_id']) ? results[0]['got_dislikes_id'] : '';
 
 				// Get info of req_profile_id follow this profile_id
 				// Actor of action
@@ -1048,8 +1048,8 @@ function processSendAPS(list_Notification,profileData,action){
 					return;
 				}
 				// Found, get list in String
-				var current_got_likes_id = results[0]['got_likes_id'];
-				var current_got_dislikes_id = results[0]['got_dislikes_id'];
+				var current_got_likes_id = utils.chkObj(results[0]['got_likes_id']) ? results[0]['got_likes_id'] : '';
+				var current_got_dislikes_id =  utils.chkObj(results[0]['got_dislikes_id']) ? results[0]['got_dislikes_id'] : '';
 
 				// Get info of req_profile_id follow this profile_id
 				// Actor of action
