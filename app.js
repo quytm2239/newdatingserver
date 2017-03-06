@@ -100,6 +100,7 @@ routes = require('./routes')(app, pool, config);
 //================================
 var serverName = process.env.NAME || 'QuyTMServer';
 var redisClient = redis.createClient();
+var numUsers = 0;
 io.on('connection', function (socket) {
   socket.emit('my-name-is', serverName);
 
