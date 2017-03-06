@@ -12,6 +12,7 @@ $(function() {
   var $usernameInput = $('.usernameInput'); // Input for username
   var $messages = $('.messages'); // Messages area
   var $inputMessage = $('.inputMessage'); // Input message input box
+  var $btnLoadHistory = $('.btnLoadHistory'); // Input message input box
 
   var $loginPage = $('.login.page'); // The login page
   var $chatPage = $('.chat.page'); // The chatroom page
@@ -223,6 +224,10 @@ $(function() {
     $inputMessage.focus();
   });
 
+    $btnLoadHistory.click(function () {
+      socket.emit('load history', '');
+    });
+
   // Socket events
 
   // Whenever the server emits 'login', log the login message
@@ -234,6 +239,10 @@ $(function() {
       prepend: true
     });
     addParticipantsMessage(data);
+  });
+
+  socket.on('load history', function (data) {
+    console.log(data);
   });
 
   // Whenever the server emits 'new message', update the chat body

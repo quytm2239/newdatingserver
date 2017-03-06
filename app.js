@@ -119,6 +119,25 @@ io.on('connection', function (socket) {
       message: data
     });
   });
+
+  socket.on('load history', function (data){
+      // Get the 100 most recent messages from Redis
+      var messages = redisClient.lrange('messages', 0, 99, function(err, reply) {
+        if(!err) {
+          var result = [];
+          // Loop through the list, parsing each item into an object
+          for(var msg in reply) result.push(JSON.parse(reply[msg]));
+          // Pass the message list to the view
+          socket.emit('load history', {
+            message: result
+          });
+        } else {
+            socket.emit('load history', {
+              message: []
+          });
+        }
+      });
+  });
   //https://www.ibm.com/developerworks/library/wa-bluemix-html5chat/
   // when the client emits 'add user', this listens and executes
   socket.on('add user', function (username) {
