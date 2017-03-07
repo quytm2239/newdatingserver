@@ -97,92 +97,91 @@ server.listen(app.get('port'), function(){
 // setting is defined in /config
 routes = require('./routes')(app, pool, config);
 
-//================================
-var serverName = process.env.NAME || 'QuyTMServer';
+//=============================== SOCKET CHAT ==================================
+
+function getNumber(value) {
+    if (isNaN(value)) {
+        return parseInt(value);
+    } else {
+        return 0;
+    }
+}
+
+var serverName = process.env.NAME || 'FindLove';
 var redisClient = redis.createClient();
-var numUsers = 0;
+var array_room = [];
 io.on('connection', function (socket) {
   socket.emit('my-name-is', serverName);
 
   var addedUser = false;
 
-  // when the client emits 'new message', this listens and executes
-  socket.on('new message', function (data) {
-    // we tell the client to execute 'new message'
-	console.log('---> SENDER: ' + socket.username + ', "' + data +'"');
-    // REDIS
-    redisClient.lpush('messages', JSON.stringify(data));
-    redisClient.ltrim('messages', 0, 99);
+  // when the client emits 'add user', this listens and executes
+  socket.on('join_chat', function (data) {
+    if (addedUser) return;
 
-    socket.broadcast.emit('new message', {
-      username: socket.username,
-      message: data
-    });
+    var master_id = data.master_id;
+    var salve_id = data.salve_id;
+    socket.username = data.user_name;
+
+    var room_id = (getNumber(master_id) > getNumber(salve_id)) ? master_id + '_' + salve_id : salve_id + '_' + master_id;
+    console.log(room_id);
+
+    socket.room = room_id;
+    socket.join(room_id);
+
+    socket.emit('join_chat', 'SERVER', 'you have connected to ' + room_id);
   });
 
-  socket.on('load history', function (data){
+  // when the client emits 'new message', this listens and executes
+  socket.on('new_message', function (data) {
+    var jsonData = {
+        username: data.username ? data.username : socket.username;
+        message: data.message;
+    };
+    redisClient.lpush(socket.room, JSON.stringify(jsonData));
+    io.sockets["in"](socket.room).emit('new_message', jsonData);
+  });
+
+  socket.on('load_history', function (data){
       // Get the 100 most recent messages from Redis
-      var messages = redisClient.lrange('messages', 0, 99, function(err, reply) {
+      var messages = redisClient.lrange(socket.room, 0, 99, function(err, reply) {
         if(!err) {
           var result = [];
           // Loop through the list, parsing each item into an object
           for(var msg in reply) result.push(JSON.parse(reply[msg]));
           // Pass the message list to the view
-          socket.emit('load history', {
+          socket.emit('load_history', {
             message: result
           });
         } else {
-            socket.emit('load history', {
+            socket.emit('load_history', {
               message: []
           });
         }
       });
   });
   //https://www.ibm.com/developerworks/library/wa-bluemix-html5chat/
-  // when the client emits 'add user', this listens and executes
-  socket.on('add user', function (username) {
-    if (addedUser) return;
-
-    // we store the username in the socket session for this client
-    socket.username = username;
-    ++numUsers;
-    addedUser = true;
-    socket.emit('login', {
-      numUsers: numUsers
-    });
-    // echo globally (all clients) that a person has connected
-    socket.broadcast.emit('user joined', {
-      username: socket.username,
-      numUsers: numUsers
-    });
-	console.log('--->' + username + ' has joined, total: ' + numUsers + ' joined');
-  });
 
   // when the client emits 'typing', we broadcast it to others
-  socket.on('typing', function () {
-    socket.broadcast.emit('typing', {
-      username: socket.username
+    socket.on('typing', function () {
+        io.sockets["in"](socket.room).emit('typing',{
+            username: socket.username
+        });
     });
-  });
 
   // when the client emits 'stop typing', we broadcast it to others
-  socket.on('stop typing', function () {
-    socket.broadcast.emit('stop typing', {
-      username: socket.username
+    socket.on('stop_typing', function () {
+        io.sockets["in"](socket.room).emit('stop_typing',{
+            username: socket.username
+        });
     });
-  });
 
   // when the user disconnects.. perform this
-  socket.on('disconnect', function () {
-    if (addedUser) {
-      --numUsers;
-
-      // echo globally that this client has left
-      socket.broadcast.emit('user left', {
-        username: socket.username,
-        numUsers: numUsers
-      });
-	  console.log('--->' + socket.username + ' has left, total: ' + numUsers + ' joined');
-    }
-  });
+    socket.on('disconnect', function () {
+        io.sockets["in"](socket.room).emit('user_left',{
+            username: socket.username,
+            numUsers: 1
+        });
+        console.log(socket.username + ' has left room: ' + socket.room);
+    });
 });
