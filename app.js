@@ -134,9 +134,11 @@ io.on('connection', function (socket) {
 
   // when the client emits 'new message', this listens and executes
   socket.on('new_message', function (data) {
+    var mSecondsTime = new Date().getTime();
     var jsonData = {
         username: data.username ? data.username : socket.username,
-        message: data.message
+        message: data.message,
+        time: mSecondsTime
     };
     redisClient.lpush(socket.room, JSON.stringify(jsonData));
     io.sockets["in"](socket.room).emit('new_message', jsonData);
