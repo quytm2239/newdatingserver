@@ -1,10 +1,230 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
+
 <head>
-  <meta charset="UTF-8">
-  <title>FindLove.CF</title>
+  <script src="https://unpkg.com/react@15.3.2/dist/react.js"></script>
+  <script src="https://unpkg.com/react-dom@15.3.2/dist/react-dom.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script>
+  <script src="https://npmcdn.com/react-router@3.0.2/umd/ReactRouter.min.js"></script>
+
+  <style>
+
+	* { margin: 0; padding: 0; }
+	html {
+		background: url(img/main_bg.png) no-repeat center center fixed;
+		-webkit-background-size: cover;
+		-moz-background-size: cover;
+		-o-background-size: cover;
+		background-size: cover;
+	}
+
+    body {
+        background-color: transparent;
+        padding: 20px;
+        margin: 0;
+        /* set background for body*/
+        /**
+        background-image:    url(img/main_bg.png);
+        background-size:     cover;
+        background-repeat:   no-repeat;
+        background-position: center center;
+        */
+    }
+    h1, h2, p, ul, li {
+        font-family: Helvetica, Arial, sans-serif;
+    }
+    ul.header li {
+        display: inline;
+        list-style-type: none;
+        margin: 0;
+    }
+    ul.header {
+      background-color: #fbe7ef;
+      padding: 0;
+    }
+    ul.header li a {
+      color: #FFF;
+      font-weight: bold;
+      text-decoration: none;
+      padding: 20px;
+      display: inline-block;
+    }
+    .content {
+      /*background-color: rgba(255, 255, 255, 0.5);
+      border-radius: 15px;
+      padding: 20px;*/
+    }
+    .content h2 {
+      padding: 0;
+      margin: 0;
+    }
+    .content li {
+      margin-bottom: 10px;
+    }
+    .active {
+      background-color: #0099FF;
+    }
+
+    .App {
+        position:fixed;
+        top: 50%;
+        left: 50%;
+        width:20em;
+        height:18em;
+        margin-top: -9em; /*set to a negative number 1/2 of your height*/
+        margin-left: -10em; /*set to a negative number 1/2 of your width*/
+        /*border: 1px solid #ccc;
+        background-color: #f3f3f3;*/
+    }
+
+    div.Login {
+        /* make layout center*/
+        /*margin: auto;
+        width: 50%;
+        padding: 0px;*/
+        background-color: rgba(150, 150, 150, 0.6);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        color: #FFFFFF;
+    }
+
+    h2.Login {
+        padding: 10px;
+    }
+
+    table.Login {
+        width: 100%;
+    }
+
+    td.Login_Left {
+        width: 30%;
+    }
+
+    td.Login_Right {
+        width: 70%;
+    }
+
+    .Login_IcPerson, .Login_IcLockWhite {
+        width: 40px !important;
+        height: 40px !important;
+        padding-top: 15px;
+    }
+
+    .Login_ID {
+        padding: 10px;
+        border: none;
+        border-bottom: solid 2px #c9c9c9;
+        transition: border 0.3s;
+    }
+
+    .Login_ID, .Password {
+        font-size : 20px;
+        background-color : transparent;
+    }
+
+    .Password {
+        padding: 10px;
+        border: none;
+        border-bottom: solid 2px #c9c9c9;
+        transition: border 0.3s;
+    }
+
+  </style>
 </head>
+
 <body>
-    <img src="findlove2_icon.png" alt="Mountain View" style="width:512px;height:512px;">
+
+    <div id="container">
+
+    </div>
+
+    <script type="text/babel">
+        var { Router,
+        Route,
+        IndexRoute,
+        IndexLink,
+        hashHistory,
+        Link } = ReactRouter;
+
+    var destination = document.querySelector("#container");
+
+    var App = React.createClass({
+      render: function() {
+        return (
+          <div className="App">
+            <div className="content">
+                {this.props.children}
+            </div>
+          </div>
+        )
+      }
+    });
+
+    var Login = React.createClass({
+        render: function() {
+            return (
+            <div className="Login">
+                <h2 className="Login">ĐĂNG NHẬP</h2>
+                <table className="Login">
+                <tbody>
+                    <tr>
+                        <td className="Login_Left"><img className="Login_IcPerson" src="img/login/ic_person_white.png"></img></td>
+                        <td><input className="Login_ID" type="text" placeholder="Enter username/email"></input></td>
+                    </tr>
+                    <tr className="Login_Right">
+                        <td><img className="Login_IcLockWhite" src="img/login/ic_lock_outline_white.png"></img></td>
+                        <td><input className="Password" type="password" placeholder="Enter password"></input></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+          );
+        }
+    });
+
+    var Contact = React.createClass({
+      render: function() {
+          return (
+            <div>
+              <h2>GOT QUESTIONS?</h2>
+              <p>The easiest thing to do is post on
+              our <a href="http://forum.kirupa.com">forums</a>.
+              </p>
+            </div>
+          );
+        }
+    });
+
+    var Stuff = React.createClass({
+      render: function() {
+          return (
+            <div>
+              <h2>STUFF</h2>
+              <p>Mauris sem velit, vehicula eget sodales vitae,
+              rhoncus eget sapien:</p>
+              <ol>
+                <li>Nulla pulvinar diam</li>
+                <li>Facilisis bibendum</li>
+                <li>Vestibulum vulputate</li>
+                <li>Eget erat</li>
+                <li>Id porttitor</li>
+              </ol>
+            </div>
+          );
+        }
+    });
+
+    ReactDOM.render(
+      <Router history={hashHistory}>
+        <Route path="/" component={App}>
+            <IndexRoute component={Login}/>
+        </Route>
+      </Router>,
+      destination
+    );
+
+  </script>
 </body>
+
 </html>
