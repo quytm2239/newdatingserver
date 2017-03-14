@@ -43,6 +43,7 @@ app.use(bodyParser.json());
 app.use(morgan('dev'));
 app.use(express.static(__dirname));
 app.use(express.static(__dirname + '/html'));
+app.use(express.static(__dirname + '/node_module'));
 app.use(express.static(__dirname + '/public'));
 app.use(express.static(__dirname + '/uploaded_image'));
 app.use(show_clientip);

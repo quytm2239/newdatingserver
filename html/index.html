@@ -6,7 +6,9 @@
   <script src="https://unpkg.com/react-dom@15.3.2/dist/react-dom.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script>
   <script src="https://npmcdn.com/react-router@3.0.2/umd/ReactRouter.min.js"></script>
-
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script src="https://findlove.cf/socket.io/socket.io.js"></script>
+  <script src="index.js"></script>
   <style>
 
 	* { margin: 0; padding: 0; }
@@ -150,6 +152,7 @@
     var destination = document.querySelector("#container");
 
     var App = React.createClass({
+
       render: function() {
         return (
           <div className="App">
@@ -178,38 +181,8 @@
                     </tr>
                     </tbody>
                 </table>
-            </div>
-          );
-        }
-    });
 
-    var Contact = React.createClass({
-      render: function() {
-          return (
-            <div>
-              <h2>GOT QUESTIONS?</h2>
-              <p>The easiest thing to do is post on
-              our <a href="http://forum.kirupa.com">forums</a>.
-              </p>
-            </div>
-          );
-        }
-    });
-
-    var Stuff = React.createClass({
-      render: function() {
-          return (
-            <div>
-              <h2>STUFF</h2>
-              <p>Mauris sem velit, vehicula eget sodales vitae,
-              rhoncus eget sapien:</p>
-              <ol>
-                <li>Nulla pulvinar diam</li>
-                <li>Facilisis bibendum</li>
-                <li>Vestibulum vulputate</li>
-                <li>Eget erat</li>
-                <li>Id porttitor</li>
-              </ol>
+                <button type="button" id="btnLogin">LOGIN</button>
             </div>
           );
         }
