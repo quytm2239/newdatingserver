@@ -14,7 +14,6 @@ $(function() {
     });
 
     $( "#btnLogin" ).click(function() {
-        alert( "Handler for .click() called." );
         joinChat();
     });
 
@@ -26,8 +25,8 @@ $(function() {
 
             var jsonJoin = {
                 master_id : master_id,
-                salve_id : master_id,
-                user_name : master_id
+                salve_id : salve_id,
+                user_name : user_name
             };
             socket.emit('join_chat', jsonJoin);
         }

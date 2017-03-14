@@ -126,11 +126,19 @@ io.on('connection', function (socket) {
 
     var room_id = (getNumber(master_id) > getNumber(salve_id)) ? master_id + '_' + salve_id : salve_id + '_' + master_id;
     console.log(room_id);
-
     socket.room = room_id;
     socket.join(room_id);
 
-    socket.emit('join_chat', 'SERVER', 'you have connected to ' + room_id);
+    var room = io.sockets.adapter.rooms[room_id];
+
+    var jsonData = {
+        master_id : master_id,
+        salve_id : salve_id,
+        user_name : data.user_name,
+        total_online : room.length
+    };
+
+    io.sockets["in"](socket.room).emit('join_chat', jsonData);
   });
 
   // when the client emits 'new message', this listens and executes
