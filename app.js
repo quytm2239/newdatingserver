@@ -123,8 +123,7 @@ io.on('connection', function (socket) {
     var master_id = data.master_id;
     var salve_id = data.salve_id;
     socket.username = data.user_name;
-
-    var room_id = (getNumber(master_id) > getNumber(salve_id)) ? master_id + '_' + salve_id : salve_id + '_' + master_id;
+    var room_id = (master_id > salve_id) ? master_id + '_' + salve_id : salve_id + '_' + master_id;
     console.log(room_id);
     socket.room = room_id;
     socket.join(room_id);
