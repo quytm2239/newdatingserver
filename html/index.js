@@ -13,6 +13,10 @@ $(function() {
         console.log(data);
     });
 
+    socket.on('load_history', function (data) {
+        console.log(data);
+    });
+
     $( "#btnLogin" ).click(function() {
         joinChat();
     });

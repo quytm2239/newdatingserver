@@ -48,12 +48,6 @@ app.use(express.static(__dirname + '/public'));
 app.use(express.static(__dirname + '/uploaded_image'));
 app.use(show_clientip);
 
-requireFromRoot = (function(root) {
-    return function(resource) {
-        return require(root+"/"+resource);
-    }
-})(__dirname);
-
 //=========================== write log to file ================================
 var logger = new winston.Logger({
   transports: [
@@ -99,18 +93,46 @@ server.listen(app.get('port'), function(){
 routes = require('./routes')(app, pool, config);
 
 //=============================== SOCKET CHAT ==================================
-
-function getNumber(value) {
-    if (isNaN(value)) {
-        return parseInt(value);
-    } else {
-        return 0;
-    }
-}
+// var socket_app     = express();
+// var server  = socket_app.listen(6969);
+// var io      = require('socket.io').listen(server);
 
 var serverName = process.env.NAME || 'FindLove';
 var redisClient = redis.createClient();
 var array_room = [];
+
+var chatHisPage = 20;
+
+function getChatHistory(room, beginIndex, firstLoad, callback) {
+    var startLoc = firstLoad ? 0 : beginIndex;
+    console.log('startLoc: ' + startLoc);
+    console.log('firstLoad: ' + firstLoad);
+    console.log('beginIndex: ' + beginIndex);
+    var messages = redisClient.lrange(room, startLoc, firstLoad ? chatHisPage - 1 : startLoc + (chatHisPage - 1), function(err, reply) {
+      if(!err) {
+          var result = [];
+            // Loop through the list, parsing each item into an object
+            for(var msg in reply) result.push(JSON.parse(reply[msg]));
+            // Pass the message list to the view
+            // socket.emit('load_history', {
+            //     beginIndex: startLoc.length >= chatHisPage ? startLoc : null,
+            //     message: result
+            // });
+            var result = {
+                beginIndex: result.length >= chatHisPage ? startLoc + chatHisPage : null,
+                message: result
+            };
+            callback && callback(result);
+        } else {
+            var result = {
+                beginIndex: null,
+                message: result
+            };
+            callback && callback(result);
+        }
+    });
+}
+
 io.on('connection', function (socket) {
   socket.emit('my-name-is', serverName);
 
@@ -138,12 +160,21 @@ io.on('connection', function (socket) {
     };
 
     io.sockets["in"](socket.room).emit('join_chat', jsonData);
+
+    getChatHistory(socket.room, 0, true, function(result){
+        socket.emit('load_history', {
+            history: result
+        });
+    });
   });
 
   // when the client emits 'new message', this listens and executes
   socket.on('new_message', function (data) {
     var mSecondsTime = new Date().getTime();
     var jsonData = {
+        master_id: data.master_id,
+        salve_id: data.salve_id,
+        avatar: data.avatar,
         username: data.username ? data.username : socket.username,
         message: data.message,
         time: mSecondsTime
@@ -153,35 +184,55 @@ io.on('connection', function (socket) {
   });
 
   socket.on('load_history', function (data){
-      // Get the 100 most recent messages from Redis
-      var messages = redisClient.lrange(socket.room, 0, 99, function(err, reply) {
-        if(!err) {
-          var result = [];
-          // Loop through the list, parsing each item into an object
-          for(var msg in reply) result.push(JSON.parse(reply[msg]));
-          // Pass the message list to the view
-          socket.emit('load_history', {
-            message: result
-          });
-        } else {
+        // Get the 100 most recent messages from Redis
+        var beginIndex = data.begin_index;
+
+        //console.log('startLoc: ' + startLoc);
+        //console.log('firstLoad: ' + firstLoad);
+        //console.log('beginIndex: ' + beginIndex);
+
+        getChatHistory(socket.room, beginIndex, false, function(result){
             socket.emit('load_history', {
-              message: []
-          });
-        }
-      });
+                history: result
+            });
+        });
+
+        // var messages = redisClient.lrange(socket.room, beginIndex, -1, function(err, reply) {
+        //     if(!err) {
+        //         var result = [];
+        //         // Loop through the list, parsing each item into an object
+        //         for(var msg in reply) result.push(JSON.parse(reply[msg]));
+        //         // Pass the message list to the view
+        //         socket.emit('load_history', {
+        //             message: result
+        //         });
+        //     } else {
+        //         socket.emit('load_history', {
+        //             message: []
+        //         });
+        //     }
+        // });
   });
   //https://www.ibm.com/developerworks/library/wa-bluemix-html5chat/
 
   // when the client emits 'typing', we broadcast it to others
     socket.on('typing', function () {
-        io.sockets["in"](socket.room).emit('typing',{
+        // io.sockets["in"](socket.room).emit('typing',{
+        //     username: socket.username
+        // });
+
+        socket.emit('typing', {
             username: socket.username
         });
     });
 
   // when the client emits 'stop typing', we broadcast it to others
     socket.on('stop_typing', function () {
-        io.sockets["in"](socket.room).emit('stop_typing',{
+        // io.sockets["in"](socket.room).emit('stop_typing',{
+        //     username: socket.username
+        // });
+
+        socket.emit('stop_typing', {
             username: socket.username
         });
     });
