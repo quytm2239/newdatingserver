@@ -17,6 +17,14 @@ var winston = require('winston');
 var fs = require('fs');
 var redis = require('redis');
 
+var https = require('https');
+var privateKey  = fs.readFileSync('/etc/letsencrypt/live/findlove.cf/privkey.pem', 'utf8');
+var certificate = fs.readFileSync('/etc/letsencrypt/live/findlove.cf/fullchain.pem', 'utf8');
+
+var credentials = {key: privateKey, cert: certificate};
+
+var httpsServer = https.createServer(credentials, app);
+
 // get our predefined file
 var config = require('./config');
 var errcode = require('./errcode');
@@ -32,6 +40,21 @@ app.set('super_secret', config.super_secret); // secret variable
 app.set('utils',utils);
 app.set('errcode',errcode);
 app.set('upload_dir',__dirname + '/uploaded_image');
+
+// Add headers
+app.use(function (req, res, next) {
+    // Website you wish to allow to connect
+    res.setHeader('Access-Control-Allow-Origin',  '*');
+    // Request methods you wish to allow
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    // Request headers you wish to allow
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    // Set to true if you need the website to include cookies in the requests sent
+    // to the API (e.g. in case you use sessions)
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    // Pass to next layer of middleware
+    next();
+});
 
 // setup parser for request body content
 app.use(bodyParser.urlencoded({
@@ -87,6 +110,11 @@ app.use(morgan(
 server.listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
 });
+
+httpsServer.listen(1235, function(){
+  console.log('Express server listening on port 1235');
+});
+
 // app is express's app
 // pool is mySql "pool" connection
 // setting is defined in /config

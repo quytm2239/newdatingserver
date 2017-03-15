@@ -9,6 +9,7 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
   <script src="https://findlove.cf/socket.io/socket.io.js"></script>
   <script src="index.js"></script>
+  <script src="js/login.js"></script>
   <style>
 
 	* { margin: 0; padding: 0; }
@@ -71,10 +72,10 @@
         position:fixed;
         top: 50%;
         left: 50%;
-        width:20em;
+        width:25em;
         height:18em;
         margin-top: -9em; /*set to a negative number 1/2 of your height*/
-        margin-left: -10em; /*set to a negative number 1/2 of your width*/
+        margin-left: -12.5em; /*set to a negative number 1/2 of your width*/
         /*border: 1px solid #ccc;
         background-color: #f3f3f3;*/
     }
@@ -97,39 +98,35 @@
 
     table.Login {
         width: 100%;
+        padding-bottom: 15px;
     }
 
-    td.Login_Left {
-        width: 30%;
+    #tdLeft {
+        width: 15% !important;
     }
 
-    td.Login_Right {
-        width: 70%;
+    #tdRight {
+        width: 85% !important;
     }
 
-    .Login_IcPerson, .Login_IcLockWhite {
+    #imgPerson, #imgWhiteLock {
         width: 40px !important;
         height: 40px !important;
         padding-top: 15px;
     }
 
-    .Login_ID {
-        padding: 10px;
-        border: none;
-        border-bottom: solid 2px #c9c9c9;
-        transition: border 0.3s;
-    }
-
-    .Login_ID, .Password {
+    #inputLoginID, #inputPassword {
         font-size : 20px;
         background-color : transparent;
-    }
-
-    .Password {
         padding: 10px;
         border: none;
-        border-bottom: solid 2px #c9c9c9;
+        border-bottom: solid 2px #ffffff;
         transition: border 0.3s;
+    }
+
+    #btnLogin {
+        width: 80px !important;
+        height: 40px !important;
     }
 
   </style>
@@ -170,18 +167,17 @@
             <div className="Login">
                 <h2 className="Login">ĐĂNG NHẬP</h2>
                 <table className="Login">
-                <tbody>
-                    <tr>
-                        <td className="Login_Left"><img className="Login_IcPerson" src="img/login/ic_person_white.png"></img></td>
-                        <td><input className="Login_ID" type="text" placeholder="Enter username/email"></input></td>
-                    </tr>
-                    <tr className="Login_Right">
-                        <td><img className="Login_IcLockWhite" src="img/login/ic_lock_outline_white.png"></img></td>
-                        <td><input className="Password" type="password" placeholder="Enter password"></input></td>
-                    </tr>
+                    <tbody>
+                        <tr>
+                            <td id="tdLeft"><img id="imgPerson" src="img/login/ic_person_white.png"></img></td>
+                            <td id="tdRight"><input id="inputLoginID" type="text" placeholder="Enter username/email"></input></td>
+                        </tr>
+                        <tr>
+                            <td id="tdLeft"><img id="imgWhiteLock" src="img/login/ic_lock_outline_white.png"></img></td>
+                            <td id="tdRight"><input id="inputPassword" type="password" placeholder="Enter password"></input></td>
+                        </tr>
                     </tbody>
                 </table>
-
                 <button type="button" id="btnLogin">LOGIN</button>
             </div>
           );

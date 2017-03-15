@@ -1,5 +1,7 @@
+var socket = io();
+var baseURL = 'https://findlove.cf:1235';
+
 $(function() {
-    var socket = io();
     var connected = false;
 
     socket.on('my-name-is', function (data) {
@@ -17,22 +19,22 @@ $(function() {
         console.log(data);
     });
 
-    $( "#btnLogin" ).click(function() {
-        joinChat();
-    });
-
-    function joinChat() {
-        if (connected) {
-            var master_id = '2';
-            var salve_id = '1';
-            var user_name = 'Tran Duong Nhien';
-
-            var jsonJoin = {
-                master_id : master_id,
-                salve_id : salve_id,
-                user_name : user_name
-            };
-            socket.emit('join_chat', jsonJoin);
-        }
-    }
+    // $( "#btnLogin" ).click(function() {
+    //     joinChat();
+    // });
+    //
+    // function joinChat() {
+    //     if (connected) {
+    //         var master_id = '2';
+    //         var salve_id = '1';
+    //         var user_name = 'Trần Mạnh Quý';
+    //
+    //         var jsonJoin = {
+    //             master_id : master_id,
+    //             salve_id : salve_id,
+    //             user_name : user_name
+    //         };
+    //         socket.emit('join_chat', jsonJoin);
+    //     }
+    // }
 });
