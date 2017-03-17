@@ -133,30 +133,22 @@ var chatHisPage = 20;
 
 function getChatHistory(room, beginIndex, firstLoad, callback) {
     var startLoc = firstLoad ? 0 : beginIndex;
-    console.log('startLoc: ' + startLoc);
-    console.log('firstLoad: ' + firstLoad);
-    console.log('beginIndex: ' + beginIndex);
     var messages = redisClient.lrange(room, startLoc, firstLoad ? chatHisPage - 1 : startLoc + (chatHisPage - 1), function(err, reply) {
-      if(!err) {
-          var result = [];
+        var result = [];
+        if(!err) {
             // Loop through the list, parsing each item into an object
             for(var msg in reply) result.push(JSON.parse(reply[msg]));
-            // Pass the message list to the view
-            // socket.emit('load_history', {
-            //     beginIndex: startLoc.length >= chatHisPage ? startLoc : null,
-            //     message: result
-            // });
-            var result = {
+            var results = {
                 beginIndex: result.length >= chatHisPage ? startLoc + chatHisPage : null,
                 message: result
             };
-            callback && callback(result);
+            callback && callback(results);
         } else {
-            var result = {
+            var results = {
                 beginIndex: null,
                 message: result
             };
-            callback && callback(result);
+            callback && callback(results);
         }
     });
 }
@@ -190,7 +182,7 @@ io.on('connection', function (socket) {
     io.sockets["in"](socket.room).emit('join_chat', jsonData);
 
     getChatHistory(socket.room, 0, true, function(result){
-        socket.emit('load_history', {
+        socket.emit('first_load_history', {
             history: result
         });
     });
@@ -212,34 +204,13 @@ io.on('connection', function (socket) {
   });
 
   socket.on('load_history', function (data){
-        // Get the 100 most recent messages from Redis
         var beginIndex = data.begin_index;
-
-        //console.log('startLoc: ' + startLoc);
-        //console.log('firstLoad: ' + firstLoad);
-        //console.log('beginIndex: ' + beginIndex);
 
         getChatHistory(socket.room, beginIndex, false, function(result){
             socket.emit('load_history', {
                 history: result
             });
         });
-
-        // var messages = redisClient.lrange(socket.room, beginIndex, -1, function(err, reply) {
-        //     if(!err) {
-        //         var result = [];
-        //         // Loop through the list, parsing each item into an object
-        //         for(var msg in reply) result.push(JSON.parse(reply[msg]));
-        //         // Pass the message list to the view
-        //         socket.emit('load_history', {
-        //             message: result
-        //         });
-        //     } else {
-        //         socket.emit('load_history', {
-        //             message: []
-        //         });
-        //     }
-        // });
   });
   //https://www.ibm.com/developerworks/library/wa-bluemix-html5chat/
 
