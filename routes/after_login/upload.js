@@ -1,7 +1,7 @@
 // ---------------------------------------------------------
 // UPLOAD (this is authenticated)
 // ---------------------------------------------------------
-
+var baseImgUrl = 'https://findlove.cf/';
 // UPLOAD AVATAR
 module.exports = function(app, pool, config){
 	var url = require('url'),
@@ -53,7 +53,7 @@ module.exports = function(app, pool, config){
 			}
 
             console.log('Complete upload image.....');
-            var img_url = 'http://178.62.102.5:1234/' + account_id + '/avatar/' + req.file.filename;
+            var img_url = baseImgUrl + account_id + '/avatar/' + req.file.filename;
             console.log(img_url);
             //----------------------------- save in DB -------------------------
             pool.getConnection(function(err, connection) {
@@ -123,7 +123,7 @@ module.exports = function(app, pool, config){
 			console.log('Complete upload image.....');
 			var img_url_concat = '';
 			for (i = 0; i < req.files.length; i++) {
-				var img_url = 'http://178.62.102.5:1234/' + account_id + '/photos/' + (req.files[i]).filename;
+				var img_url = baseImgUrl + account_id + '/photos/' + (req.files[i]).filename;
 				img_url_concat = img_url_concat + (i > 0 ? '|' : '') + img_url;
 			}
 			//----------------------------- save in DB -------------------------
@@ -283,5 +283,51 @@ module.exports = function(app, pool, config){
 			});
 		});
 		//------------------------------------------------------------------
+	});
+
+	// upload chat image
+	rootRouter.post('/chat', function(req, res) {
+
+		var account_id = req.decoded['account']['account_id'];
+		var storage = multer.diskStorage({
+			destination: function(req, file, cb) {
+				var path = app.get('upload_dir')
+				cb(null, path + '/' + account_id + '/chat')
+			},
+			filename: function (req, file, cb) {
+			  crypto.pseudoRandomBytes(16, function (err, raw) {
+				//cb(null, raw.toString('hex') + Date.now() + '.' + mime.extension(file.mimetype));
+				cb(null, Date.now() + '.' + mime.extension(file.mimetype));
+			  });
+			}
+		});
+
+		var upload = multer({storage: storage}).single('file');
+
+		console.log('Start upload image.....');
+		upload(req, res, function(err) {
+			if(err) {
+				res.status(500).send(utils.responsePhotos(errcode.code_upload_error,err,[]));
+				return;
+			}
+
+			if (utils.chkObj(req.file) == false) {
+				res.status(400).send(utils.responsePhotos(
+					errcode.code_null_invalid_upload_file,
+					errcode.errorMessage(errcode.code_null_invalid_upload_file),
+					[])
+				);
+				return;
+			}
+
+			console.log('Complete upload image.....');
+			var img_url = baseImgUrl + account_id + '/chat/' + req.file.filename;
+			console.log(img_url);
+			res.status(200).send(utils.responsePhotos(
+				errcode.code_success,
+				errcode.errorMessage(errcode.code_success),
+				[img_url])
+			);
+		});
 	});
 };

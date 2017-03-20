@@ -193,6 +193,7 @@ module.exports =
             } else {
                 module.exports.createDir(base_path,account_id,'avatar');
                 module.exports.createDir(base_path,account_id,'photos');
+                module.exports.createDir(base_path,account_id,'chat');
             }
         });
     },
