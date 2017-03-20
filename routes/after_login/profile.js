@@ -204,7 +204,7 @@ module.exports = function(app, pool, config){
 					if (utils.chkObj(results[0]['following_id'])) {
 						var following_str = results[0]['following_id'];
 						following_str = following_str.substr(1, following_str.length - 2);
-						array_following_id = followers_str.split('|');
+						array_following_id = following_str.split('|');
 					}
 				}
 
