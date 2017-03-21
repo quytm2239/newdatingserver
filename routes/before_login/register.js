@@ -56,11 +56,11 @@ module.exports = function(app, pool, config){
 		}
 
 		// Validate birthday
-		if (!(utils.chkObj(birthday)) || !(utils.validateBirthday(birthday)))
-		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_birthday,[]));
-			return;
-		}
+		// if (!(utils.chkObj(birthday)) || !(utils.validateBirthday(birthday)))
+		// {
+		// 	res.status(400).send(utils.responseConvention(errcode.code_null_invalid_birthday,[]));
+		// 	return;
+		// }
 
 		// Validate address
 		// if (!(utils.chkObj(province)))
@@ -169,7 +169,7 @@ module.exports = function(app, pool, config){
 										+' VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
 									timeout: 1000, // 1s
 									values: [full_name,user_status,avatar,gender,
-										 	insertedAccountId,birthday,phone,profile_description,
+										 	insertedAccountId,null,phone,profile_description,
 											district,province,country,latitude,longitude,
 											null,null,0,0,
 											null,null,0,0,
@@ -292,11 +292,11 @@ module.exports = function(app, pool, config){
 			}
 
 			// Validate birthday
-			if (utils.chkObj(birthday) == false)
-			{
-				expressRes.status(400).send(utils.responseConvention(errcode.code_null_invalid_birthday,[]));
-				return;
-			}
+			// if (utils.chkObj(birthday) == false)
+			// {
+			// 	expressRes.status(400).send(utils.responseConvention(errcode.code_null_invalid_birthday,[]));
+			// 	return;
+			// }
 
 			pool.getConnection(function(err, connection) {
 				if (err) {
@@ -426,7 +426,7 @@ module.exports = function(app, pool, config){
 										+' VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
 									timeout: 1000, // 1s
 									values: [full_name,user_status,avatar,gender,
-										 	insertedAccountId,birthday,phone,profile_description,
+										 	insertedAccountId,null,phone,profile_description,
 											district,province,country,latitude,longitude,
 											null,null,0,0,
 											null,null,0,0,
