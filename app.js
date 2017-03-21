@@ -170,7 +170,7 @@ io.on('connection', function (socket) {
     var salve_id = data.salve_id;
     socket.username = data.user_name;
     var room_id = (master_id > salve_id) ? master_id + '_' + salve_id : salve_id + '_' + master_id;
-    console.log(room_id);
+    console.log(data.user_name + 'has joined room: ' +room_id);
     socket.room = room_id;
     socket.join(room_id);
 
@@ -203,7 +203,7 @@ io.on('connection', function (socket) {
         username: data.username ? data.username : socket.username,
         message: data.message,
         time: mSecondsTime,
-        image: data.img_url ? data.img_url : ''
+        image_url: data.image_url ? data.image_url : ''
     };
     redisClient.lpush(socket.room, JSON.stringify(jsonData));
     io.sockets["in"](socket.room).emit('new_message', jsonData);

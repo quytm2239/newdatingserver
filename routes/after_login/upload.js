@@ -38,13 +38,15 @@ module.exports = function(app, pool, config){
 			//console.log('File [' + fieldname + ']: filename: ' + filename + ', encoding: ' + encoding + ', mimetype: ' + mimetype);
 			saveTo = path.join(full_path, path.basename(filename));
 			//console.log(saveTo);
+			var img_url = baseImgUrl + account_id + '/avatar/' + filename;
+			files.push(img_url);
 
 			fstream = fs.createWriteStream(saveTo);
 			file.pipe(fstream);
-			fstream.on('close', function(){
-				console.log('file ' + filename + ' uploaded');
-				files.push(baseImgUrl + account_id + '/avatar/' + filename);
-			});
+			// fstream.on('close', function(){
+			// 	console.log('file ' + filename + ' uploaded');
+			// 	files.push(baseImgUrl + account_id + '/avatar/' + filename);
+			// });
 
 		});
 
@@ -101,13 +103,15 @@ module.exports = function(app, pool, config){
 			//console.log('File [' + fieldname + ']: filename: ' + filename + ', encoding: ' + encoding + ', mimetype: ' + mimetype);
 			saveTo = path.join(full_path, path.basename(filename));
 			//console.log(saveTo);
+			var img_url = baseImgUrl + account_id + '/photos/' + filename;
+			files.push(img_url);
 
 			fstream = fs.createWriteStream(saveTo);
 			file.pipe(fstream);
-			fstream.on('close', function(){
-				console.log('file ' + filename + ' uploaded');
-				files.push(baseImgUrl + account_id + '/photos/' + filename);
-			});
+			// fstream.on('close', function(){
+			// 	console.log('file ' + filename + ' uploaded');
+			// 	files.push(baseImgUrl + account_id + '/photos/' + filename);
+			// });
 
 		});
 
@@ -299,21 +303,21 @@ module.exports = function(app, pool, config){
 		busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
 		  	//console.log('File [' + fieldname + ']: filename: ' + filename + ', encoding: ' + encoding + ', mimetype: ' + mimetype);
 			saveTo = path.join(full_path, path.basename(filename));
-			//console.log(saveTo);
+			var img_url = baseImgUrl + account_id + '/chat/' + filename;
+			files.push(img_url);
 
 			fstream = fs.createWriteStream(saveTo);
 			file.pipe(fstream);
-			fstream.on('close', function(){
-				console.log('file ' + filename + ' uploaded');
-				files.push(baseImgUrl + account_id + '/chat/' + filename);
-			});
-
+			// fstream.on('close', function(){
+			// 	console.log('file ' + filename + ' is STORED SUCESSFULLY!');
+			// });
 		});
 		// busboy.on('field', function(fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) {
 		//   	console.log('Field [' + fieldname + ']: value: ' + inspect(val));
 		// });
 		busboy.on('finish', function() {
-			console.log(files);
+			console.log('FINISH --> uploaded');
+			//console.log(files);
 			res.status(200).send(utils.responsePhotos(
 				errcode.code_success,
 				errcode.errorMessage(errcode.code_success),
