@@ -12,119 +12,111 @@ module.exports = function(app, pool, config){
 	var errcode = app.get('errcode');
 	app.use(config.api_path,rootRouter);
 
-    var crypto = require('crypto');
-    var mime = require('mime');
-    var multer  =   require('multer');
-    // Storage option can be changed - check Multer docs
+    // var crypto = require('crypto');
+    // var mime = require('mime');
+    // var multer  =   require('multer');
+    // // Storage option can be changed - check Multer docs
 
     rootRouter.post('/avatar', function(req, res) {
-		console.log('=========================================================');
+		// BUSBOY ============>>>>>>>>>>>>>
+		// load module
+		var path = require('path');
+		var inspect = require('util').inspect;
+		var Busboy = require('busboy');
+		var fs = require('fs');
 
-        var account_id = req.decoded['account']['account_id'];
-        var storage = multer.diskStorage({
-            destination: function(req, file, cb) {
-                var path = app.get('upload_dir')
-                cb(null, path + '/' + account_id + '/avatar')
-            },
-            filename: function (req, file, cb) {
-              crypto.pseudoRandomBytes(16, function (err, raw) {
-                //cb(null, raw.toString('hex') + Date.now() + '.' + mime.extension(file.mimetype));
-                cb(null, Date.now() + '.' + mime.extension(file.mimetype));
-              });
-            }
-        });
+		var account_id = req.decoded['account']['account_id'];
+		var full_path = app.get('upload_dir') + '/' + account_id + '/avatar'
 
-        var upload = multer({storage: storage}).single('file');
+		var busboy = new Busboy({ headers: req.headers });
+		var saveTo = '';
+		var img_url = '';
+		var files = [];
+		var fstream;
 
-        console.log('Start upload image.....');
-        upload(req, res, function(err) {
-            if(err) {
-				res.status(500).send(utils.responsePhotos(errcode.code_upload_error,err,[]));
-	            return;
-            }
+		busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
+			//console.log('File [' + fieldname + ']: filename: ' + filename + ', encoding: ' + encoding + ', mimetype: ' + mimetype);
+			saveTo = path.join(full_path, path.basename(filename));
+			//console.log(saveTo);
 
-			if (utils.chkObj(req.file) == false) {
-				res.status(400).send(utils.responsePhotos(
-					errcode.code_null_invalid_upload_file,
-					errcode.errorMessage(errcode.code_null_invalid_upload_file),
-					[])
-				);
-				return;
-			}
+			fstream = fs.createWriteStream(saveTo);
+			file.pipe(fstream);
+			fstream.on('close', function(){
+				console.log('file ' + filename + ' uploaded');
+				files.push(baseImgUrl + account_id + '/avatar/' + filename);
+			});
 
-            console.log('Complete upload image.....');
-            var img_url = baseImgUrl + account_id + '/avatar/' + req.file.filename;
-            console.log(img_url);
-            //----------------------------- save in DB -------------------------
-            pool.getConnection(function(err, connection) {
-                if (err) {
-                    res.status(500).send(utils.responsePhotos(errcode.code_db_error,'Error in database connection',[]));
-                    return;
-                }
+		});
 
-                //------------------- UPDATE PROFILE's AVATAR ------------------
-                connection.query({
-                    sql: 'UPDATE `profile` SET `avatar`= ? WHERE `account_id` = ?',
-                    timeout: 1000, // 1s
-                    values:[img_url,account_id]
-                }, function (error, results, fields) {
-                    connection.release();
-                    if (error) {
-                        res.status(500).send(utils.responsePhotos(errcode.code_db_error,error,[]));
-                    } else {
+		busboy.on('finish', function() {
+			// update to database
+			pool.getConnection(function(err, connection) {
+				if (err) {
+					res.status(500).send(utils.responsePhotos(errcode.code_db_error,'Error in database connection',[]));
+					return;
+				}
+				//------------------- UPDATE PROFILE's AVATAR ------------------
+				connection.query({
+					sql: 'UPDATE `profile` SET `avatar`= ? WHERE `account_id` = ?',
+					timeout: 1000, // 1s
+					values:[files[0],account_id]
+				}, function (error, results, fields) {
+					connection.release();
+					if (error) {
+						res.status(500).send(utils.responsePhotos(errcode.code_db_error,error,[]));
+					} else {
 						res.status(200).send(utils.responsePhotos(
 							errcode.code_success,
 							errcode.errorMessage(errcode.code_success),
-							[img_url])
+							files)
 						);
-                    }
-                });
-            });
-            //------------------------------------------------------------------
-        });
+					}
+				});
+			});
+		});
+		// PROCESS
+		req.pipe(busboy);
     });
 
 	// UPLOAD PHOTOS
 	rootRouter.post('/photos', function(req, res) {
 
+		// BUSBOY ============>>>>>>>>>>>>>
+		// load module
+		var path = require('path');
+		var inspect = require('util').inspect;
+		var Busboy = require('busboy');
+		var fs = require('fs');
+
 		var account_id = req.decoded['account']['account_id'];
-		var storage = multer.diskStorage({
-			destination: function(req, file, cb) {
-				var path = app.get('upload_dir')
-				cb(null, path + '/' + account_id + '/photos')
-			},
-			filename: function (req, file, cb) {
-			  crypto.pseudoRandomBytes(16, function (err, raw) {
-				//cb(null, raw.toString('hex') + Date.now() + '.' + mime.extension(file.mimetype));
-				cb(null, Date.now() + '.' + mime.extension(file.mimetype));
-			  });
-			}
+		var full_path = app.get('upload_dir') + '/' + account_id + '/photos'
+
+		var busboy = new Busboy({ headers: req.headers });
+		var saveTo = '';
+		var img_url = '';
+		var files = [];
+		var fstream;
+
+		busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
+			//console.log('File [' + fieldname + ']: filename: ' + filename + ', encoding: ' + encoding + ', mimetype: ' + mimetype);
+			saveTo = path.join(full_path, path.basename(filename));
+			//console.log(saveTo);
+
+			fstream = fs.createWriteStream(saveTo);
+			file.pipe(fstream);
+			fstream.on('close', function(){
+				console.log('file ' + filename + ' uploaded');
+				files.push(baseImgUrl + account_id + '/photos/' + filename);
+			});
+
 		});
 
-		var upload = multer({storage: storage}).array('file',5);
-
-		console.log('=========================================================');
-		console.log('Start upload image.....');
-		upload(req, res, function(err) {
-			if(err) {
-			  	console.log(err);
-			  	res.status(500).send(utils.responsePhotos(errcode.code_upload_error,err,[]));
-			  	return;
-			}
-
-			if (utils.chkObj(req.files) == false || (utils.chkObj(req.files) && req.files.length == 0)) {
-				res.status(400).send(utils.responsePhotos(
-					errcode.code_null_invalid_upload_file,
-					errcode.errorMessage(errcode.code_null_invalid_upload_file),
-					[])
-				);
-				return;
-			}
+		busboy.on('finish', function() {
+			// update to database
 			console.log('Complete upload image.....');
 			var img_url_concat = '';
-			for (i = 0; i < req.files.length; i++) {
-				var img_url = baseImgUrl + account_id + '/photos/' + (req.files[i]).filename;
-				img_url_concat = img_url_concat + (i > 0 ? '|' : '') + img_url;
+			for (i = 0; i < files.length; i++) {
+				img_url_concat = img_url_concat + (i > 0 ? '|' : '') + files[i];
 			}
 			//----------------------------- save in DB -------------------------
 			pool.getConnection(function(err, connection) {
@@ -200,6 +192,8 @@ module.exports = function(app, pool, config){
 			});
 			//------------------------------------------------------------------
 		});
+		// PROCESS
+		req.pipe(busboy);
 	});
 
 	function processSendAPS(listFollowersId_Notification,profileData){
@@ -287,47 +281,45 @@ module.exports = function(app, pool, config){
 
 	// upload chat image
 	rootRouter.post('/chat', function(req, res) {
+		// load module
+		var path = require('path');
+		var inspect = require('util').inspect;
+		var Busboy = require('busboy');
+		var fs = require('fs');
 
 		var account_id = req.decoded['account']['account_id'];
-		var storage = multer.diskStorage({
-			destination: function(req, file, cb) {
-				var path = app.get('upload_dir')
-				cb(null, path + '/' + account_id + '/chat')
-			},
-			filename: function (req, file, cb) {
-			  crypto.pseudoRandomBytes(16, function (err, raw) {
-				//cb(null, raw.toString('hex') + Date.now() + '.' + mime.extension(file.mimetype));
-				cb(null, Date.now() + '.' + mime.extension(file.mimetype));
-			  });
-			}
+		var full_path = app.get('upload_dir') + '/' + account_id + '/chat'
+
+		var busboy = new Busboy({ headers: req.headers });
+		var saveTo = '';
+		var img_url = '';
+		var files = [];
+		var fstream;
+
+		busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
+		  	//console.log('File [' + fieldname + ']: filename: ' + filename + ', encoding: ' + encoding + ', mimetype: ' + mimetype);
+			saveTo = path.join(full_path, path.basename(filename));
+			//console.log(saveTo);
+
+			fstream = fs.createWriteStream(saveTo);
+			file.pipe(fstream);
+			fstream.on('close', function(){
+				console.log('file ' + filename + ' uploaded');
+				files.push(baseImgUrl + account_id + '/chat/' + filename);
+			});
+
 		});
-
-		var upload = multer({storage: storage}).single('file');
-
-		console.log('Start upload image.....');
-		upload(req, res, function(err) {
-			if(err) {
-				res.status(500).send(utils.responsePhotos(errcode.code_upload_error,err,[]));
-				return;
-			}
-
-			if (utils.chkObj(req.file) == false) {
-				res.status(400).send(utils.responsePhotos(
-					errcode.code_null_invalid_upload_file,
-					errcode.errorMessage(errcode.code_null_invalid_upload_file),
-					[])
-				);
-				return;
-			}
-
-			console.log('Complete upload image.....');
-			var img_url = baseImgUrl + account_id + '/chat/' + req.file.filename;
-			console.log(img_url);
+		// busboy.on('field', function(fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) {
+		//   	console.log('Field [' + fieldname + ']: value: ' + inspect(val));
+		// });
+		busboy.on('finish', function() {
+			console.log(files);
 			res.status(200).send(utils.responsePhotos(
 				errcode.code_success,
 				errcode.errorMessage(errcode.code_success),
-				[img_url])
+				files)
 			);
 		});
+		req.pipe(busboy);
 	});
 };

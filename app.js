@@ -16,8 +16,8 @@ var winston = require('winston');
 
 var fs = require('fs');
 var redis = require('redis');
-var readChunk = require('read-chunk');
-var fileType = require('file-type');
+// var readChunk = require('read-chunk');
+// var fileType = require('file-type');
 
 var https = require('https');
 var privateKey  = fs.readFileSync('/etc/letsencrypt/live/findlove.cf/privkey.pem', 'utf8');
@@ -77,20 +77,21 @@ app.use(show_clientip);
 var logger = new winston.Logger({
   transports: [
     new winston.transports.File({
-      level:            'info',
+      level:            'debug',
       filename:         './all-logs.log',
       handleExceptions: true,
-      json:             true,
+      json:             false,
       maxsize:          104857600, //100MB
       maxFiles:         10,
       colorize:         false
-    }),
-    new winston.transports.Console({
-      level:            'debug',
-      handleExceptions: true,
-      json:             false,
-      colorize:         true
     })
+    // ,
+    // new winston.transports.Console({
+    //   level:            'debug',
+    //   handleExceptions: true,
+    //   json:             false,
+    //   colorize:         true
+    // })
   ],
   exitOnError: false
 });
@@ -195,46 +196,17 @@ io.on('connection', function (socket) {
   socket.on('new_message', function (data) {
     var mSecondsTime = new Date().getTime();
 
-    if (data.image_data && data.account_id) {
-    // Encode to base64
-        var path = app.get('upload_dir') + path + '/' + account_id + '/chat';
-
-        var buffer = readChunk.sync(data.image_data, 0, 4100);
-
-        fileType(buffer);
-
-        var fileName = Date.now();
-        var img_url = baseImgUrl + account_id + '/chat/' + fileName;
-        var img_path = path + fileName;
-
-        require("fs").writeFile(img_path, data.image_data, 'base64', function(err) {
-          console.log(err);
-
-          var jsonData = {
-              master_id: data.master_id,
-              salve_id: data.salve_id,
-              avatar: data.avatar,
-              username: data.username ? data.username : socket.username,
-              message: data.message,
-              time: mSecondsTime,
-              image: img_url
-          };
-          redisClient.lpush(socket.room, JSON.stringify(jsonData));
-          io.sockets["in"](socket.room).emit('new_message', jsonData);
-        });
-    } else {
-        var jsonData = {
-            master_id: data.master_id,
-            salve_id: data.salve_id,
-            avatar: data.avatar,
-            username: data.username ? data.username : socket.username,
-            message: data.message,
-            time: mSecondsTime,
-            image: ''
-        };
-        redisClient.lpush(socket.room, JSON.stringify(jsonData));
-        io.sockets["in"](socket.room).emit('new_message', jsonData);
-    }
+    var jsonData = {
+        master_id: data.master_id,
+        salve_id: data.salve_id,
+        avatar: data.avatar,
+        username: data.username ? data.username : socket.username,
+        message: data.message,
+        time: mSecondsTime,
+        image: data.img_url ? data.img_url : ''
+    };
+    redisClient.lpush(socket.room, JSON.stringify(jsonData));
+    io.sockets["in"](socket.room).emit('new_message', jsonData);
   });
 
   socket.on('load_history', function (data){
