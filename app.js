@@ -156,13 +156,37 @@ function getChatHistory(room, beginIndex, firstLoad, callback) {
         }
     });
 }
+/*
+// sending to sender-client only
+socket.emit('message', "this is a test");
+
+// sending to all clients, include sender
+io.emit('message', "this is a test");
+
+// sending to all clients except sender
+socket.broadcast.emit('message', "this is a test");
+
+// sending to all clients in 'game' room(channel) except sender
+socket.broadcast.to('game').emit('message', 'nice game');
+
+// sending to all clients in 'game' room(channel), include sender
+io.in('game').emit('message', 'cool game');
+
+// sending to sender client, only if they are in 'game' room(channel)
+socket.to('game').emit('message', 'enjoy the game');
+
+// sending to all clients in namespace 'myNamespace', include sender
+io.of('myNamespace').emit('message', 'gg');
+
+// sending to individual socketid
+socket.broadcast.to(socketid).emit('message', 'for your eyes only');
+*/
 
 io.on('connection', function (socket) {
   socket.emit('my-name-is', serverName);
 
   var addedUser = false;
 
-  // when the client emits 'add user', this listens and executes
   socket.on('join_chat', function (data) {
     if (addedUser) return;
 
@@ -206,7 +230,11 @@ io.on('connection', function (socket) {
         image_url: data.image_url ? data.image_url : ''
     };
     redisClient.lpush(socket.room, JSON.stringify(jsonData));
-    io.sockets["in"](socket.room).emit('new_message', jsonData);
+    if (data.image_url && data.image_url.length > 0) {
+        socket.broadcast.to(socket.room).emit('new_message', jsonData);
+    } else {
+        io.sockets["in"](socket.room).emit('new_message', jsonData);
+    }
   });
 
   socket.on('load_history', function (data){
