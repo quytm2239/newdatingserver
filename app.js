@@ -14,6 +14,8 @@ var morgan = require('morgan');
 var mysql = require('mysql');
 var winston = require('winston');
 
+var schedule = require('node-schedule');
+
 var fs = require('fs');
 var redis = require('redis');
 // var readChunk = require('read-chunk');
@@ -279,3 +281,411 @@ io.on('connection', function (socket) {
         console.log(socket.username + ' has left room: ' + socket.room);
     });
 });
+
+// CRON JOB to calculate RANK
+/**
+*    *    *    *    *    *
+┬    ┬    ┬    ┬    ┬    ┬
+│    │    │    │    │    |
+│    │    │    │    │    └ day of week (0 - 7) (0 or 7 is Sun)
+│    │    │    │    └───── month (1 - 12)
+│    │    │    └────────── day of month (1 - 31)
+│    │    └─────────────── hour (0 - 23)
+│    └──────────────────── minute (0 - 59)
+└───────────────────────── second (0 - 59, OPTIONAL)
+*/
+
+const Rank = {
+    FOLLOWER: 1,
+    FOLLOWER_MALE: 2,
+    FOLLOWER_FEMALE: 3,
+    LIKE: 4,
+    LIKE_MALE: 5,
+    LIKE_FEMALE: 6
+}
+
+var j = schedule.scheduleJob('* 00 00 * * *', function(){
+    console.log('----------------->*<[Start calculate ranking]>*<-----------------');
+    calculateRank();
+});
+
+//calculateRank();
+
+function calculateRank() {
+
+    var all_success = 0;
+    var STR_FOLLOWER_RANK = '';
+    var STR_FOLLOWER_MALE_RANK = '';
+    var STR_FOLLOWER_FEMALE_RANK = '';
+    var STR_LIKE_RANK = '';
+    var STR_LIKE_MALE_RANK = '';
+    var STR_LIKE_FEMALE_RANK = '';
+
+    pool.getConnection(function(err, connection) {
+        if (err) {
+            console.log('Error in database connection');
+            return;
+        }
+
+        //----->* FOLLOWER *<----//
+        connection.query({
+            sql: 'SELECT * FROM `profile` ORDER BY `total_followers` DESC, `modified_by` ASC LIMIT 50',
+            timeout: 2000, // 2s
+            values: []
+        }, function(error, results, fields) {
+            if (error) {
+                console.log(error);
+                connection.release();
+            }
+            if (results.length == 0 || results == null) { // not found record
+                console.log('Empty Profile table!');
+                all_success ++;
+                console.log('all_success: ' + all_success);
+                if (all_success == 6) {
+                    console.log('SEND MAIL');
+                    var data = {
+                        follower : STR_FOLLOWER_RANK,
+                        follower_male : STR_FOLLOWER_MALE_RANK,
+                        follower_female : STR_FOLLOWER_FEMALE_RANK,
+                        like : STR_LIKE_RANK,
+                        like_male : STR_LIKE_MALE_RANK,
+                        like_female : STR_LIKE_FEMALE_RANK
+                    };
+                    utils.sendMailNewRank(data);
+                }
+                connection.release();
+            } else { // found record
+                var rankStr = '';
+                for (i = 0; i < results.length; i++) {
+                    rankStr = rankStr + (i > 0 ? '|' : '') + results[i]['profile_id'];
+                }
+                connection.query({
+                    sql: 'UPDATE `rank` SET `last_rank` = ? WHERE rank_id = ?',
+                    timeout: 2000, // 2s
+                    values: [rankStr,Rank.FOLLOWER]
+                }, function(error, results, fields) {
+                    if (error == null) {
+                        console.log('Success calculate FOLLOWER RANK!');
+                        all_success ++;
+                        STR_FOLLOWER_RANK = rankStr;
+                        console.log('all_success: ' + all_success);
+                        if (all_success == 6) {
+                            console.log('SEND MAIL');
+                            var data = {
+                                follower : STR_FOLLOWER_RANK,
+                                follower_male : STR_FOLLOWER_MALE_RANK,
+                                follower_female : STR_FOLLOWER_FEMALE_RANK,
+                                like : STR_LIKE_RANK,
+                                like_male : STR_LIKE_MALE_RANK,
+                                like_female : STR_LIKE_FEMALE_RANK
+                            };
+                            utils.sendMailNewRank(data);
+                        }
+                    }
+                });
+            }
+        });
+
+        //----->* FOLLOWER_MALE *<----//
+        connection.query({
+            sql: 'SELECT * FROM `profile`'
+            + ' WHERE `gender` = 0'
+            + ' ORDER BY `total_followers` DESC, `modified_by` ASC LIMIT 50',
+            timeout: 2000, // 2s
+            values: []
+        }, function(error, results, fields) {
+            if (error) {
+                console.log('Error in FOLLOWER_MALE query!');
+                connection.release();
+            }
+            if (results.length == 0 || results == null) { // not found record
+                console.log('Empty Profile table!');
+                all_success ++;
+                console.log('all_success: ' + all_success);
+                if (all_success == 6) {
+                    console.log('SEND MAIL');
+                    var data = {
+                        follower : STR_FOLLOWER_RANK,
+                        follower_male : STR_FOLLOWER_MALE_RANK,
+                        follower_female : STR_FOLLOWER_FEMALE_RANK,
+                        like : STR_LIKE_RANK,
+                        like_male : STR_LIKE_MALE_RANK,
+                        like_female : STR_LIKE_FEMALE_RANK
+                    };
+                    utils.sendMailNewRank(data);
+                }
+                connection.release();
+            } else { // found record
+                var rankStr = '';
+                for (i = 0; i < results.length; i++) {
+                    rankStr = rankStr + (i > 0 ? '|' : '') + results[i]['profile_id'];
+                }
+                connection.query({
+                    sql: 'UPDATE `rank` SET `last_rank` = ? WHERE rank_id = ?',
+                    timeout: 2000, // 2s
+                    values: [rankStr,Rank.FOLLOWER_MALE]
+                }, function(error, results, fields) {
+                    if (error == null) {
+                        console.log('Success calculate FOLLOWER_MALE RANK!');
+                    }
+                    all_success ++;
+                    STR_FOLLOWER_MALE_RANK = rankStr;
+                    console.log('all_success: ' + all_success);
+                    if (all_success == 6) {
+                        console.log('SEND MAIL');
+                        var data = {
+                            follower : STR_FOLLOWER_RANK,
+                            follower_male : STR_FOLLOWER_MALE_RANK,
+                            follower_female : STR_FOLLOWER_FEMALE_RANK,
+                            like : STR_LIKE_RANK,
+                            like_male : STR_LIKE_MALE_RANK,
+                            like_female : STR_LIKE_FEMALE_RANK
+                        };
+                        utils.sendMailNewRank(data);
+                    }
+                });
+            }
+        });
+
+        //----->* FOLLOWER_FEMALE *<----//
+        connection.query({
+            sql: 'SELECT * FROM `profile`'
+            + ' WHERE `gender` = 1'
+            + ' ORDER BY `total_followers` DESC, `modified_by` ASC LIMIT 50',
+            timeout: 2000, // 2s
+            values: []
+        }, function(error, results, fields) {
+            if (error) {
+                console.log('Error in FOLLOWER_FEMALE query!');
+                connection.release();
+            }
+            if (results.length == 0 || results == null) { // not found record
+                console.log('Empty Profile table!');
+                all_success ++;
+                console.log('all_success: ' + all_success);
+                if (all_success == 6) {
+                    console.log('SEND MAIL');
+                    var data = {
+                        follower : STR_FOLLOWER_RANK,
+                        follower_male : STR_FOLLOWER_MALE_RANK,
+                        follower_female : STR_FOLLOWER_FEMALE_RANK,
+                        like : STR_LIKE_RANK,
+                        like_male : STR_LIKE_MALE_RANK,
+                        like_female : STR_LIKE_FEMALE_RANK
+                    };
+                    utils.sendMailNewRank(data);
+                }
+                connection.release();
+            } else { // found record
+                var rankStr = '';
+                for (i = 0; i < results.length; i++) {
+                    rankStr = rankStr + (i > 0 ? '|' : '') + results[i]['profile_id'];
+                }
+                connection.query({
+                    sql: 'UPDATE `rank` SET `last_rank` = ? WHERE rank_id = ?',
+                    timeout: 2000, // 2s
+                    values: [rankStr,Rank.FOLLOWER_FEMALE]
+                }, function(error, results, fields) {
+                    if (error == null) {
+                        console.log('Success calculate FOLLOWER_FEMALE RANK!');
+                    }
+                    all_success ++;
+                    STR_FOLLOWER_FEMALE_RANK = rankStr;
+                    console.log('all_success: ' + all_success);
+                    if (all_success == 6) {
+                        console.log('SEND MAIL');
+                        var data = {
+                            follower : STR_FOLLOWER_RANK,
+                            follower_male : STR_FOLLOWER_MALE_RANK,
+                            follower_female : STR_FOLLOWER_FEMALE_RANK,
+                            like : STR_LIKE_RANK,
+                            like_male : STR_LIKE_MALE_RANK,
+                            like_female : STR_LIKE_FEMALE_RANK
+                        };
+                        utils.sendMailNewRank(data);
+                    }
+                });
+            }
+        });
+
+        //----->* LIKE *<----//
+        connection.query({
+            sql: 'SELECT * FROM `profile` ORDER BY `total_got_likes` DESC, `modified_by` ASC LIMIT 50',
+            timeout: 2000, // 2s
+            values: []
+        }, function(error, results, fields) {
+            if (error) {
+                console.log('Error in LIKE query!');
+                connection.release();
+            }
+            if (results.length == 0 || results == null) { // not found record
+                console.log('Empty Profile table!');
+                all_success ++;
+                console.log('all_success: ' + all_success);
+                if (all_success == 6) {
+                    console.log('SEND MAIL');
+                    var data = {
+                        follower : STR_FOLLOWER_RANK,
+                        follower_male : STR_FOLLOWER_MALE_RANK,
+                        follower_female : STR_FOLLOWER_FEMALE_RANK,
+                        like : STR_LIKE_RANK,
+                        like_male : STR_LIKE_MALE_RANK,
+                        like_female : STR_LIKE_FEMALE_RANK
+                    };
+                    utils.sendMailNewRank(data);
+                }
+                connection.release();
+            } else { // found record
+                var rankStr = '';
+                for (i = 0; i < results.length; i++) {
+                    rankStr = rankStr + (i > 0 ? '|' : '') + results[i]['profile_id'];
+                }
+                connection.query({
+                    sql: 'UPDATE `rank` SET `last_rank` = ? WHERE rank_id = ?',
+                    timeout: 2000, // 2s
+                    values: [rankStr,Rank.LIKE]
+                }, function(error, results, fields) {
+                    if (error == null) {
+                        console.log('Success calculate LIKE RANK!');
+                    }
+                    all_success ++;
+                    STR_LIKE_RANK = rankStr;
+                    console.log('all_success: ' + all_success);
+                    if (all_success == 6) {
+                        console.log('SEND MAIL');
+                        var data = {
+                            follower : STR_FOLLOWER_RANK,
+                            follower_male : STR_FOLLOWER_MALE_RANK,
+                            follower_female : STR_FOLLOWER_FEMALE_RANK,
+                            like : STR_LIKE_RANK,
+                            like_male : STR_LIKE_MALE_RANK,
+                            like_female : STR_LIKE_FEMALE_RANK
+                        };
+                        utils.sendMailNewRank(data);
+                    }
+                });
+            }
+        });
+
+        //----->* LIKE_MALE *<----//
+        connection.query({
+            sql: 'SELECT * FROM `profile`'
+            + ' WHERE `gender` = 0'
+            + ' ORDER BY `total_got_likes` DESC, `modified_by` ASC LIMIT 50',
+            timeout: 2000, // 2s
+            values: []
+        }, function(error, results, fields) {
+            if (error) {
+                console.log('Error in LIKE_MALE query!');
+                connection.release();
+            }
+            if (results.length == 0 || results == null) { // not found record
+                console.log('Empty Profile table!');
+                all_success ++;
+                console.log('all_success: ' + all_success);
+                if (all_success == 6) {
+                    console.log('SEND MAIL');
+                    var data = {
+                        follower : STR_FOLLOWER_RANK,
+                        follower_male : STR_FOLLOWER_MALE_RANK,
+                        follower_female : STR_FOLLOWER_FEMALE_RANK,
+                        like : STR_LIKE_RANK,
+                        like_male : STR_LIKE_MALE_RANK,
+                        like_female : STR_LIKE_FEMALE_RANK
+                    };
+                    utils.sendMailNewRank(data);
+                }
+                connection.release();
+            } else { // found record
+                var rankStr = '';
+                for (i = 0; i < results.length; i++) {
+                    rankStr = rankStr + (i > 0 ? '|' : '') + results[i]['profile_id'];
+                }
+                connection.query({
+                    sql: 'UPDATE `rank` SET `last_rank` = ? WHERE rank_id = ?',
+                    timeout: 2000, // 2s
+                    values: [rankStr,Rank.LIKE_MALE]
+                }, function(error, results, fields) {
+                    if (error == null) {
+                        console.log('Success calculate LIKE_MALE RANK!');
+                    }
+                    all_success ++;
+                    STR_LIKE_MALE_RANK = rankStr;
+                    console.log('all_success: ' + all_success);
+                    if (all_success == 6) {
+                        console.log('SEND MAIL');
+                        var data = {
+                            follower : STR_FOLLOWER_RANK,
+                            follower_male : STR_FOLLOWER_MALE_RANK,
+                            follower_female : STR_FOLLOWER_FEMALE_RANK,
+                            like : STR_LIKE_RANK,
+                            like_male : STR_LIKE_MALE_RANK,
+                            like_female : STR_LIKE_FEMALE_RANK
+                        };
+                        utils.sendMailNewRank(data);
+                    }
+                });
+            }
+        });
+
+        //----->* LIKE_FEMALE *<----//
+        connection.query({
+            sql: 'SELECT * FROM `profile`'
+            + ' WHERE `gender` = 1'
+            + ' ORDER BY `total_got_likes` DESC, `modified_by` ASC LIMIT 50',
+            timeout: 2000, // 2s
+            values: []
+        }, function(error, results, fields) {
+            if (error) {
+                console.log('Error in LIKE_FEMALE query!');
+                connection.release();
+            }
+            if (results.length == 0 || results == null) { // not found record
+                console.log('Empty Profile table!');
+                all_success ++;
+                console.log('all_success: ' + all_success);
+                if (all_success == 6) {
+                    console.log('SEND MAIL');
+                    var data = {
+                        follower : STR_FOLLOWER_RANK,
+                        follower_male : STR_FOLLOWER_MALE_RANK,
+                        follower_female : STR_FOLLOWER_FEMALE_RANK,
+                        like : STR_LIKE_RANK,
+                        like_male : STR_LIKE_MALE_RANK,
+                        like_female : STR_LIKE_FEMALE_RANK
+                    };
+                    utils.sendMailNewRank(data);
+                }
+                connection.release();
+            } else { // found record
+                var rankStr = '';
+                for (i = 0; i < results.length; i++) {
+                    rankStr = rankStr + (i > 0 ? '|' : '') + results[i]['profile_id'];
+                }
+                connection.query({
+                    sql: 'UPDATE `rank` SET `last_rank` = ? WHERE rank_id = ?',
+                    timeout: 2000, // 2s
+                    values: [rankStr,Rank.LIKE_FEMALE]
+                }, function(error, results, fields) {
+                    if (error == null) {
+                        console.log('Success calculate LIKE_FEMALE RANK!');
+                    }
+                    all_success ++;
+                    STR_LIKE_FEMALE_RANK = rankStr;
+                    if (all_success == 6) {
+                        console.log('SEND MAIL');
+                        var data = {
+                            follower : STR_FOLLOWER_RANK,
+                            follower_male : STR_FOLLOWER_MALE_RANK,
+                            follower_female : STR_FOLLOWER_FEMALE_RANK,
+                            like : STR_LIKE_RANK,
+                            like_male : STR_LIKE_MALE_RANK,
+                            like_female : STR_LIKE_FEMALE_RANK
+                        };
+                        utils.sendMailNewRank(data);
+                    }
+                });
+            }
+        });
+    });
+}

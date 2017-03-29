@@ -158,6 +158,34 @@ module.exports =
     		};
     	});
     },
+    sendMailNewRank: function (data)
+    {
+        var string = JSON.stringify(data);
+        var transporter = nodemailer.createTransport({
+            service: 'Gmail',
+            auth: {
+                user: 'findlove.noreply@gmail.com', // Your email id
+                pass: 'thucgu12' // Your password
+            }
+        });
+
+        var text = 'New Ranking Data - ' + Date() + '\n' + string;
+        console.log(text);
+        var mailOptions = {
+            from: 'noreply_dating@gmail.com', // sender address
+            to: 'quytm2239@gmail.com', // list of receivers
+            subject: 'Dating New Ranking Data', // Subject line
+            text: text
+        };
+
+        transporter.sendMail(mailOptions, function(error, info){
+            if(error){
+                console.log(error);
+            }else{
+                console.log('Message sent: ' + info.response);
+            };
+        });
+    },
     createDir: function (base_path,account_id,sub_path) {
         console.log("Going to create directory in " + base_path + " for account_id: " + account_id);
         fs.mkdir(base_path + '/' + account_id + '/' + sub_path,function(err){

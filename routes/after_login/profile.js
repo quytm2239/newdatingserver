@@ -1424,6 +1424,148 @@ function processSendAPS(list_Notification,profileData,action){
 		});
 	});
 
+	// ---------------------------------------------------------
+	// GET TOPLIKE PROFILE (this is authenticated)
+	// ---------------------------------------------------------
+	rootRouter.get('/toplike', function(req, res) {
+
+		// check header or url parameters or post parameters for token
+		// var profile_id = req.query['profile_id'];
+		// var req_profile_id = req.decoded['profile']['profile_id'];
+		var page_size = req.query['page_size'];
+		var page = req.query['page'];
+		var gender = req.query['gender'];
+
+		// var getOtherProfile = false;
+		// if (utils.chkObj(profile_id) && isNaN(profile_id) == false)  {
+		// 	getOtherProfile = true
+		// }
+
+		if (!(utils.chkObj(page_size)) || isNaN(page_size))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
+			return;
+		}
+
+		if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+			return;
+		}
+		var needQueryGender = false;
+		if (utils.chkObj(gender))
+		{
+			if (isNaN(gender)){
+				if (gender.length > 0 && gender != 'all'){
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+				}
+			} else if ((gender != 0 && gender != 1)) {
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+			} else if (gender != 'all' && (gender == 0 || gender == 1)) {
+				needQueryGender = true;
+			}
+		}
+		var limit = page_size;
+		var offset = (page - 1) * page_size;
+
+		pool.getConnection(function(err, connection) {
+			if (err) {
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+				return;
+			}
+			connection.query({
+				sql: 'SELECT * FROM `profile`'
+				+ (needQueryGender ? ' WHERE `gender` = ' + gender : '')
+				+ ' ORDER BY `total_got_likes` DESC, `modified_by` ASC LIMIT 50',
+				timeout: 2000, // 2s
+				values: []
+			}, function(error, results, fields) {
+				connection.release();
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+				}
+				if (results.length == 0 || results == null) { // not found record
+					res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+				} else { // found record
+					res.status(200).send(utils.responseConvention(errcode.code_success,results));
+				}
+			});
+		});
+	});
+
+	// ---------------------------------------------------------
+	// GET TOPFOLLOWER PROFILE (this is authenticated)
+	// ---------------------------------------------------------
+	rootRouter.get('/topfollower', function(req, res) {
+
+		// check header or url parameters or post parameters for token
+		// var profile_id = req.query['profile_id'];
+		// var req_profile_id = req.decoded['profile']['profile_id'];
+		var page_size = req.query['page_size'];
+		var page = req.query['page'];
+		var gender = req.query['gender'];
+
+		// var getOtherProfile = false;
+		// if (utils.chkObj(profile_id) && isNaN(profile_id) == false)  {
+		// 	getOtherProfile = true
+		// }
+
+		if (!(utils.chkObj(page_size)) || isNaN(page_size))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
+			return;
+		}
+
+		if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+			return;
+		}
+		var needQueryGender = false;
+		if (utils.chkObj(gender))
+		{
+			if (isNaN(gender)){
+				if (gender.length > 0 && gender != 'all'){
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+				}
+			} else if ((gender != 0 && gender != 1)) {
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+			} else if (gender != 'all' && (gender == 0 || gender == 1)) {
+				needQueryGender = true;
+			}
+		}
+		var limit = page_size;
+		var offset = (page - 1) * page_size;
+
+		pool.getConnection(function(err, connection) {
+			if (err) {
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+				return;
+			}
+			connection.query({
+				sql: 'SELECT * FROM `profile`'
+				+ (needQueryGender ? ' WHERE `gender` = ' + gender : '')
+				+ ' ORDER BY `total_followers` DESC, `modified_by` ASC LIMIT 50',
+				timeout: 2000, // 2s
+				values: []
+			}, function(error, results, fields) {
+				connection.release();
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+				}
+				if (results.length == 0 || results == null) { // not found record
+					res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+				} else { // found record
+					res.status(200).send(utils.responseConvention(errcode.code_success,results));
+				}
+			});
+		});
+	});
+
 //==============================================================================
 // ---------------------------------------------------------
 // GET LIST OF LIKE PROFILE (this is authenticated)
