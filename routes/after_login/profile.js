@@ -1424,6 +1424,15 @@ function processSendAPS(list_Notification,profileData,action){
 		});
 	});
 
+	const Rank = {
+	    FOLLOWER: 1,
+	    FOLLOWER_MALE: 2,
+	    FOLLOWER_FEMALE: 3,
+	    LIKE: 4,
+	    LIKE_MALE: 5,
+	    LIKE_FEMALE: 6
+	}
+
 	// ---------------------------------------------------------
 	// GET TOPLIKE PROFILE (this is authenticated)
 	// ---------------------------------------------------------
@@ -1441,17 +1450,17 @@ function processSendAPS(list_Notification,profileData,action){
 		// 	getOtherProfile = true
 		// }
 
-		if (!(utils.chkObj(page_size)) || isNaN(page_size))
-		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
-			return;
-		}
-
-		if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
-		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
-			return;
-		}
+		// if (!(utils.chkObj(page_size)) || isNaN(page_size))
+		// {
+		// 	res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
+		// 	return;
+		// }
+		//
+		// if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
+		// {
+		// 	res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+		// 	return;
+		// }
 		var needQueryGender = false;
 		if (utils.chkObj(gender))
 		{
@@ -1482,14 +1491,35 @@ function processSendAPS(list_Notification,profileData,action){
 				timeout: 2000, // 2s
 				values: []
 			}, function(error, results, fields) {
-				connection.release();
+
 				if (error) {
 					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+					connection.release();
 				}
 				if (results.length == 0 || results == null) { // not found record
 					res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+					connection.release();
 				} else { // found record
-					res.status(200).send(utils.responseConvention(errcode.code_success,results));
+					var rankId = needQueryGender ? gender == 0 ? Rank.LIKE_MALE : Rank.LIKE_FEMALE : Rank.LIKE;
+					var topLikeData = results;
+					connection.query({
+						sql: 'SELECT * FROM `rank` WHERE `rank_id` = ?',
+						timeout: 2000, // 2s
+						values: [rankId]
+					}, function(error, results, fields) {
+						connection.release();
+						var last_rank_arr = utils.chkObj(results[0]['last_rank']) ? results[0]['last_rank'].split('|') : [];
+						var array_profile_id = [];
+						for (i = 0; i < last_rank_arr.length; i++) {
+							array_profile_id.push(parseInt(last_rank_arr[i]));
+						}
+						res.status(200).send({
+				            status: errcode.code_success,
+				            message: errcode.errorMessage(errcode.code_success),
+				            data: topLikeData,
+							last_rank: array_profile_id
+				        });
+					});
 				}
 			});
 		});
@@ -1512,17 +1542,17 @@ function processSendAPS(list_Notification,profileData,action){
 		// 	getOtherProfile = true
 		// }
 
-		if (!(utils.chkObj(page_size)) || isNaN(page_size))
-		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
-			return;
-		}
-
-		if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
-		{
-			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
-			return;
-		}
+		// if (!(utils.chkObj(page_size)) || isNaN(page_size))
+		// {
+		// 	res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
+		// 	return;
+		// }
+		//
+		// if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
+		// {
+		// 	res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+		// 	return;
+		// }
 		var needQueryGender = false;
 		if (utils.chkObj(gender))
 		{
@@ -1553,14 +1583,34 @@ function processSendAPS(list_Notification,profileData,action){
 				timeout: 2000, // 2s
 				values: []
 			}, function(error, results, fields) {
-				connection.release();
 				if (error) {
 					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+					connection.release();
 				}
 				if (results.length == 0 || results == null) { // not found record
 					res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+					connection.release();
 				} else { // found record
-					res.status(200).send(utils.responseConvention(errcode.code_success,results));
+					var rankId = needQueryGender ? gender == 0 ? Rank.FOLLOWER_MALE : Rank.FOLLOWER_FEMALE : Rank.FOLLOWER;
+					var topFollowerData = results;
+					connection.query({
+						sql: 'SELECT * FROM `rank` WHERE `rank_id` = ?',
+						timeout: 2000, // 2s
+						values: [rankId]
+					}, function(error, results, fields) {
+						connection.release();
+						var last_rank_arr = utils.chkObj(results[0]['last_rank']) ? results[0]['last_rank'].split('|') : [];
+						var array_profile_id = [];
+						for (i = 0; i < last_rank_arr.length; i++) {
+							array_profile_id.push(parseInt(last_rank_arr[i]));
+						}
+						res.status(200).send({
+				            status: errcode.code_success,
+				            message: errcode.errorMessage(errcode.code_success),
+				            data: topFollowerData,
+							last_rank: array_profile_id
+				        });
+					});
 				}
 			});
 		});

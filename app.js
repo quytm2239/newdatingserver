@@ -304,7 +304,7 @@ const Rank = {
     LIKE_FEMALE: 6
 }
 
-var j = schedule.scheduleJob('* 00 00 * * *', function(){
+var j = schedule.scheduleJob('* 0 0 * * *', function(){
     console.log('----------------->*<[Start calculate ranking]>*<-----------------');
     calculateRank();
 });
@@ -342,6 +342,8 @@ function calculateRank() {
                 all_success ++;
                 console.log('all_success: ' + all_success);
                 if (all_success == 6) {
+                    connection.release();
+
                     console.log('SEND MAIL');
                     var data = {
                         follower : STR_FOLLOWER_RANK,
@@ -353,7 +355,6 @@ function calculateRank() {
                     };
                     utils.sendMailNewRank(data);
                 }
-                connection.release();
             } else { // found record
                 var rankStr = '';
                 for (i = 0; i < results.length; i++) {
@@ -403,6 +404,8 @@ function calculateRank() {
                 all_success ++;
                 console.log('all_success: ' + all_success);
                 if (all_success == 6) {
+                    connection.release();
+
                     console.log('SEND MAIL');
                     var data = {
                         follower : STR_FOLLOWER_RANK,
@@ -414,7 +417,6 @@ function calculateRank() {
                     };
                     utils.sendMailNewRank(data);
                 }
-                connection.release();
             } else { // found record
                 var rankStr = '';
                 for (i = 0; i < results.length; i++) {
@@ -464,6 +466,8 @@ function calculateRank() {
                 all_success ++;
                 console.log('all_success: ' + all_success);
                 if (all_success == 6) {
+                    connection.release();
+
                     console.log('SEND MAIL');
                     var data = {
                         follower : STR_FOLLOWER_RANK,
@@ -475,7 +479,6 @@ function calculateRank() {
                     };
                     utils.sendMailNewRank(data);
                 }
-                connection.release();
             } else { // found record
                 var rankStr = '';
                 for (i = 0; i < results.length; i++) {
@@ -523,6 +526,8 @@ function calculateRank() {
                 all_success ++;
                 console.log('all_success: ' + all_success);
                 if (all_success == 6) {
+                    connection.release();
+
                     console.log('SEND MAIL');
                     var data = {
                         follower : STR_FOLLOWER_RANK,
@@ -534,7 +539,7 @@ function calculateRank() {
                     };
                     utils.sendMailNewRank(data);
                 }
-                connection.release();
+
             } else { // found record
                 var rankStr = '';
                 for (i = 0; i < results.length; i++) {
@@ -594,8 +599,8 @@ function calculateRank() {
                         like_female : STR_LIKE_FEMALE_RANK
                     };
                     utils.sendMailNewRank(data);
+                    connection.release();
                 }
-                connection.release();
             } else { // found record
                 var rankStr = '';
                 for (i = 0; i < results.length; i++) {
@@ -645,6 +650,8 @@ function calculateRank() {
                 all_success ++;
                 console.log('all_success: ' + all_success);
                 if (all_success == 6) {
+                    connection.release();
+
                     console.log('SEND MAIL');
                     var data = {
                         follower : STR_FOLLOWER_RANK,
@@ -656,7 +663,6 @@ function calculateRank() {
                     };
                     utils.sendMailNewRank(data);
                 }
-                connection.release();
             } else { // found record
                 var rankStr = '';
                 for (i = 0; i < results.length; i++) {
