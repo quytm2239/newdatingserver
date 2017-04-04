@@ -304,7 +304,7 @@ const Rank = {
     LIKE_FEMALE: 6
 }
 
-var j = schedule.scheduleJob('* 0 0 * * *', function(){
+var j = schedule.scheduleJob('0 0 0 * * *', function(){
     console.log('----------------->*<[Start calculate ranking]>*<-----------------');
     calculateRank();
 });

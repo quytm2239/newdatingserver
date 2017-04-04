@@ -33,6 +33,8 @@ module.exports={
     code_not_allow_like_profile_id: 2029,
     code_not_allow_like_dislike_self: 2030,
     code_not_allow_dislike_profile_id: 2031,
+    code_invalid_min_age: 2032,
+    code_invalid_max_age: 2033,
 
     errorMessage: function (code) {
     	var mess;
@@ -138,6 +140,12 @@ module.exports={
             break;
         case module.exports.code_not_allow_like_dislike_self:
             mess = "you can not like/dislike your profile.";
+            break;
+        case module.exports.code_invalid_min_age:
+            mess = "min_age is invalid (>= 18)";
+            break;
+        case module.exports.code_invalid_max_age:
+            mess = "max_age is invalid (<= 80)";
             break;
         }
     	return mess;

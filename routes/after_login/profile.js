@@ -11,6 +11,158 @@ module.exports = function(app, pool, config){
 	var errcode = app.get('errcode');
 	app.use(config.api_path,rootRouter);
 
+
+	// ---------------------------------------------------------
+	// ALL PROFILE (this is authenticated)
+	// ---------------------------------------------------------
+	rootRouter.get('/allProfile', function(req, res) {
+
+		// var latitude = req.query['latitude'];
+		// var longitude = req.query['longitude'];
+		var province = req.query['province'];
+		var min_age = req.query['min_age'];
+		var max_age = req.query['max_age'];
+
+		var page_size = req.query['page_size'];
+		var page = req.query['page'];
+
+		var gender = req.query['gender'];
+		// if ( !(utils.chkObj(latitude)) || !(utils.chkObj(longitude )) )
+		// {
+		// 	res.status(400).send(utils.responseConvention(errcode.code_null_invalid_lat_long,[]));
+		// 	return;
+		// }
+
+		if (!(utils.chkObj(page_size)) || isNaN(page_size))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
+			return;
+		}
+
+
+		if (!(utils.chkObj(page_size)) || isNaN(page_size))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page_size,[]));
+			return;
+		}
+
+		if (!(utils.chkObj(page)) || isNaN(page) || ( isNaN(page) == false && page <= 0))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+			return;
+		}
+		var needQueryGender = false;
+		if (utils.chkObj(gender))
+		{
+			if (isNaN(gender)){
+				if (gender.length > 0 && gender != 'all'){
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+				}
+			} else if ((gender != 0 && gender != 1)) {
+				res.status(400).send(utils.responseConvention(errcode.code_null_invalid_page,[]));
+				return;
+			} else if (gender != 'all' && (gender == 0 || gender == 1)) {
+				needQueryGender = true;
+			}
+		}
+
+		var needQueryMinAge = false;
+		if (utils.chkObj(min_age))
+		{
+			if (isNaN(min_age)){
+				if (min_age < 18){
+				res.status(400).send(utils.responseConvention(errcode.code_invalid_min_age,[]));
+				return;
+			} else {
+				needQueryMinAge = true;
+			}
+		}
+
+		var needQueryMaxAge = false;
+		if (utils.chkObj(max_age))
+		{
+			if (isNaN(max_age)){
+				if (max_age > 80){
+				res.status(400).send(utils.responseConvention(errcode.code_invalid_max_age,[]));
+				return;
+			} else {
+				needQueryMaxAge = true;
+			}
+		}
+
+		var limit = page_size;
+		var offset = (page - 1) * page_size;
+
+		// var distanceStr = '111.1111 * DEGREES(ACOS(COS(RADIANS(latitude))'
+		// + ' * COS(RADIANS(' + latitude + '))'
+		// + ' * COS(RADIANS(longitude - ' + longitude + ')) + SIN(RADIANS(latitude))'
+		// + ' * SIN(RADIANS(' + latitude + '))))';
+
+		var sqlQuery = 'SELECT * FROM `profile`'
+		+ ' WHERE true'
+		+ (needQueryGender ? ' AND `gender` = ' + gender : '')
+		+ (needQueryMinAge ? ' AND `min_age` = ' + min_age : '')
+		+ (needQueryMaxAge ? ' AND `max_age` = ' + max_age : '')
+		+ ' ORDER BY created_by DESC'
+		+ ' LIMIT ' + limit + ' OFFSET ' + offset;
+
+		pool.getConnection(function(err, connection) {
+			if (err) {
+				res.status(500).send(utils.responseWithMessage(errcode.code_db_error,'Error in database connection',[]));
+				return;
+			}
+			connection.query({
+				sql: 'SELECT * FROM `profile` WHERE `profile_id` = ' + req.decoded['profile']['profile_id'],
+				timeout: 1000, // 1s
+				values: []
+			}, function(error, results, fields) {
+				if (error) {
+					res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+					return;
+				}
+
+				var array_followers_id = [];
+				var array_following_id = [];
+
+				if (utils.chkObj(results)) {
+					if (utils.chkObj(results[0]['followers_id'])) {
+						var followers_str = results[0]['followers_id'];
+						followers_str = followers_str.substr(1, followers_str.length - 2);
+						array_followers_id = followers_str.split('|');
+					}
+
+
+					if (utils.chkObj(results[0]['following_id'])) {
+						var following_str = results[0]['following_id'];
+						following_str = following_str.substr(1, following_str.length - 2);
+						array_following_id = following_str.split('|');
+					}
+				}
+
+				connection.query({
+					sql: sqlQuery,
+					timeout: 10000, // 10s
+					values: []
+				}, function(error, results, fields) {
+					connection.release();
+					if (error) {
+						res.status(500).send(utils.responseWithMessage(errcode.code_db_error,error,[]));
+						return;
+					}
+					var aroundProfile = utils.chkObj(results) ? results : [];
+					res.status(200).send({
+						status: errcode.code_success,
+						message: errcode.errorMessage(errcode.code_success),
+						data: aroundProfile,
+						follower_id: array_followers_id,
+						following_id: array_following_id
+					});
+				});
+			});
+		});
+	});
+
 	// ---------------------------------------------------------
 	// GET PROFILE (this is authenticated)
 	// ---------------------------------------------------------
@@ -333,10 +485,11 @@ module.exports = function(app, pool, config){
 
 						//---------STEP 1: update [followers_id] to table[profile] of followed profile----------
 						var insertedAccountId;
+						var update_follower_time = new Date().getTime();
 						connection.query({
-							sql: 'UPDATE `profile` SET `followers_id` = ?,`total_followers` = ? WHERE `profile_id` = ?',
+							sql: 'UPDATE `profile` SET `followers_id` = ?,`total_followers` = ?,`update_follower_time` = ? WHERE `profile_id` = ?',
 							timeout: 1000, // 1s
-							values: [new_followers_id,total_followers,profile_id]
+							values: [new_followers_id,total_followers,update_follower_time,profile_id]
 						}, function (error, results, fields) {
 
 							if (error) {
@@ -503,10 +656,11 @@ module.exports = function(app, pool, config){
 
 						//---------STEP 1: update [followers_id] to table[profile] of followed profile----------
 						var insertedAccountId;
+						var update_follower_time = new Date().getTime();
 						connection.query({
-							sql: 'UPDATE `profile` SET `followers_id` = ?,`total_followers` = ? WHERE `profile_id` = ?',
+							sql: 'UPDATE `profile` SET `followers_id` = ?,`total_followers` = ?,`update_follower_time` = ? WHERE `profile_id` = ?',
 							timeout: 1000, // 1s
-							values: [new_followers_id,total_followers,profile_id]
+							values: [new_followers_id,total_followers,update_follower_time,profile_id]
 						}, function (error, results, fields) {
 
 							if (error) {
@@ -915,11 +1069,12 @@ function processSendAPS(list_Notification,profileData,action){
 
 						//---------STEP 1: update new_got_likes_id,new_got_dislikes_id] to table[profile] of got like profile----------
 						var insertedAccountId;
+						var update_got_like_time = new Date().getTime();
 						connection.query({
-							sql: 'UPDATE `profile` SET `got_likes_id` = ?,`got_dislikes_id` = ?, `total_got_likes` = ?, `total_got_dislikes` = ?'
+							sql: 'UPDATE `profile` SET `got_likes_id` = ?,`got_dislikes_id` = ?, `total_got_likes` = ?, `total_got_dislikes` = ?, `update_got_like_time` = ?'
 							+ ' WHERE `profile_id` = ?',
 							timeout: 1000, // 1s
-							values: [new_got_likes_id,new_got_dislikes_id,total_got_likes,total_got_dislikes,profile_id]
+							values: [new_got_likes_id,new_got_dislikes_id,total_got_likes,total_got_dislikes,update_got_like_time,profile_id]
 						}, function (error, results, fields) {
 
 							if (error) {
@@ -1129,11 +1284,12 @@ function processSendAPS(list_Notification,profileData,action){
 
 						//---------STEP 1: update new_got_likes_id,new_got_dislikes_id] to table[profile] of got like profile----------
 						var insertedAccountId;
+						var update_got_like_time = new Date().getTime();
 						connection.query({
-							sql: 'UPDATE `profile` SET `got_likes_id` = ?,`got_dislikes_id` = ?, `total_got_likes` = ?, `total_got_dislikes` = ?'
+							sql: 'UPDATE `profile` SET `got_likes_id` = ?,`got_dislikes_id` = ?, `total_got_likes` = ?, `total_got_dislikes` = ?, `update_got_like_time` = ?'
 							+ ' WHERE `profile_id` = ?',
 							timeout: 1000, // 1s
-							values: [new_got_likes_id,new_got_dislikes_id,total_got_likes,total_got_dislikes,profile_id]
+							values: [new_got_likes_id,new_got_dislikes_id,total_got_likes,total_got_dislikes,update_got_like_time,profile_id]
 						}, function (error, results, fields) {
 
 							if (error) {
@@ -1487,7 +1643,7 @@ function processSendAPS(list_Notification,profileData,action){
 			connection.query({
 				sql: 'SELECT * FROM `profile`'
 				+ (needQueryGender ? ' WHERE `gender` = ' + gender : '')
-				+ ' ORDER BY `total_got_likes` DESC, `modified_by` ASC LIMIT 50',
+				+ ' ORDER BY `total_got_likes` DESC, `update_got_like_time` ASC LIMIT 50',
 				timeout: 2000, // 2s
 				values: []
 			}, function(error, results, fields) {
@@ -1579,7 +1735,7 @@ function processSendAPS(list_Notification,profileData,action){
 			connection.query({
 				sql: 'SELECT * FROM `profile`'
 				+ (needQueryGender ? ' WHERE `gender` = ' + gender : '')
-				+ ' ORDER BY `total_followers` DESC, `modified_by` ASC LIMIT 50',
+				+ ' ORDER BY `total_followers` DESC, `update_follower_time` ASC LIMIT 50',
 				timeout: 2000, // 2s
 				values: []
 			}, function(error, results, fields) {
