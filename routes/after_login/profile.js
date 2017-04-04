@@ -72,8 +72,9 @@ module.exports = function(app, pool, config){
 		{
 			if (isNaN(min_age)){
 				if (min_age < 18){
-				res.status(400).send(utils.responseConvention(errcode.code_invalid_min_age,[]));
-				return;
+					res.status(400).send(utils.responseConvention(errcode.code_invalid_min_age,[]));
+					return;
+				}
 			} else {
 				needQueryMinAge = true;
 			}
@@ -84,8 +85,9 @@ module.exports = function(app, pool, config){
 		{
 			if (isNaN(max_age)){
 				if (max_age > 80){
-				res.status(400).send(utils.responseConvention(errcode.code_invalid_max_age,[]));
-				return;
+					res.status(400).send(utils.responseConvention(errcode.code_invalid_max_age,[]));
+					return;
+				}
 			} else {
 				needQueryMaxAge = true;
 			}
@@ -131,7 +133,6 @@ module.exports = function(app, pool, config){
 						followers_str = followers_str.substr(1, followers_str.length - 2);
 						array_followers_id = followers_str.split('|');
 					}
-
 
 					if (utils.chkObj(results[0]['following_id'])) {
 						var following_str = results[0]['following_id'];
