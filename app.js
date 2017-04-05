@@ -329,7 +329,7 @@ function calculateRank() {
 
         //----->* FOLLOWER *<----//
         connection.query({
-            sql: 'SELECT * FROM `profile` ORDER BY `total_followers` DESC, `modified_by` ASC LIMIT 50',
+            sql: 'SELECT * FROM `profile` WHERE `total_followers` > 0 ORDER BY `total_followers` DESC, `update_follower_time` ASC LIMIT 50',
             timeout: 2000, // 2s
             values: []
         }, function(error, results, fields) {
@@ -390,8 +390,8 @@ function calculateRank() {
         //----->* FOLLOWER_MALE *<----//
         connection.query({
             sql: 'SELECT * FROM `profile`'
-            + ' WHERE `gender` = 0'
-            + ' ORDER BY `total_followers` DESC, `modified_by` ASC LIMIT 50',
+            + ' WHERE `gender` = 0 AND `total_followers` > 0 '
+            + ' ORDER BY `total_followers` DESC, `update_follower_time` ASC LIMIT 50',
             timeout: 2000, // 2s
             values: []
         }, function(error, results, fields) {
@@ -452,8 +452,8 @@ function calculateRank() {
         //----->* FOLLOWER_FEMALE *<----//
         connection.query({
             sql: 'SELECT * FROM `profile`'
-            + ' WHERE `gender` = 1'
-            + ' ORDER BY `total_followers` DESC, `modified_by` ASC LIMIT 50',
+            + ' WHERE `gender` = 1 AND `total_followers` > 0 '
+            + ' ORDER BY `total_followers` DESC, `update_follower_time` ASC LIMIT 50',
             timeout: 2000, // 2s
             values: []
         }, function(error, results, fields) {
@@ -513,7 +513,7 @@ function calculateRank() {
 
         //----->* LIKE *<----//
         connection.query({
-            sql: 'SELECT * FROM `profile` ORDER BY `total_got_likes` DESC, `modified_by` ASC LIMIT 50',
+            sql: 'SELECT * FROM `profile` WHERE `total_got_likes` > 0 ORDER BY `total_got_likes` DESC, `update_got_like_time` ASC LIMIT 50',
             timeout: 2000, // 2s
             values: []
         }, function(error, results, fields) {
@@ -575,8 +575,8 @@ function calculateRank() {
         //----->* LIKE_MALE *<----//
         connection.query({
             sql: 'SELECT * FROM `profile`'
-            + ' WHERE `gender` = 0'
-            + ' ORDER BY `total_got_likes` DESC, `modified_by` ASC LIMIT 50',
+            + ' WHERE `gender` = 0 AND `total_got_likes` > 0'
+            + ' ORDER BY `total_got_likes` DESC, `update_got_like_time` ASC LIMIT 50',
             timeout: 2000, // 2s
             values: []
         }, function(error, results, fields) {
@@ -636,8 +636,8 @@ function calculateRank() {
         //----->* LIKE_FEMALE *<----//
         connection.query({
             sql: 'SELECT * FROM `profile`'
-            + ' WHERE `gender` = 1'
-            + ' ORDER BY `total_got_likes` DESC, `modified_by` ASC LIMIT 50',
+            + ' WHERE `gender` = 1 AND `total_got_likes` > 0'
+            + ' ORDER BY `total_got_likes` DESC, `update_got_like_time` ASC LIMIT 50',
             timeout: 2000, // 2s
             values: []
         }, function(error, results, fields) {

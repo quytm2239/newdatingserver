@@ -1673,7 +1673,7 @@ function processSendAPS(list_Notification,profileData,action){
 						values: [rankId]
 					}, function(error, results, fields) {
 						connection.release();
-						var last_rank_arr = utils.chkObj(results[0]['last_rank']) ? results[0]['last_rank'].split('|') : [];
+						var last_rank_arr = utils.chkObj(results) && utils.chkObj(results[0]['last_rank']) ? results[0]['last_rank'].split('|') : [];
 						var array_profile_id = [];
 						for (i = 0; i < last_rank_arr.length; i++) {
 							array_profile_id.push(parseInt(last_rank_arr[i]));
@@ -1771,7 +1771,7 @@ function processSendAPS(list_Notification,profileData,action){
 						values: [rankId]
 					}, function(error, results, fields) {
 						connection.release();
-						var last_rank_arr = utils.chkObj(results[0]['last_rank']) ? results[0]['last_rank'].split('|') : [];
+						var last_rank_arr = utils.chkObj(results) && utils.chkObj(results[0]['last_rank']) ? results[0]['last_rank'].split('|') : [];
 						var array_profile_id = [];
 						for (i = 0; i < last_rank_arr.length; i++) {
 							array_profile_id.push(parseInt(last_rank_arr[i]));
