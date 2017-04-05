@@ -35,6 +35,7 @@ module.exports={
     code_not_allow_dislike_profile_id: 2031,
     code_invalid_min_age: 2032,
     code_invalid_max_age: 2033,
+    code_invalid_age: 2034,
 
     errorMessage: function (code) {
     	var mess;
@@ -146,6 +147,9 @@ module.exports={
             break;
         case module.exports.code_invalid_max_age:
             mess = "max_age is invalid (<= 80)";
+            break;
+        case module.exports.code_invalid_age:
+            mess = "Your age is not valid (18 - 80)";
             break;
         }
     	return mess;

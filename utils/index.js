@@ -109,6 +109,33 @@ module.exports =
     		return false;
     	}
     },
+    checkAge: function (birthDay)
+    {
+        var res = birthDay.split("-");
+        var birth_year = res[0];
+        var birth_month = res[1];
+        var birth_day = res[2];
+
+        today_date = new Date();
+        today_year = today_date.getFullYear();
+        today_month = today_date.getMonth();
+        today_day = today_date.getDate();
+        age = today_year - birth_year;
+
+        if ( today_month < (birth_month - 1))
+        {
+            age--;
+        }
+        if (((birth_month - 1) == today_month) && (today_day < birth_day))
+        {
+            age--;
+        }
+
+        if (age < 18 || age > 80) {
+            return false;
+        }
+        return true;
+    },
     validatePhone: function (phone)
     {
     	var regex = /^[0-9]{10,11}$/;

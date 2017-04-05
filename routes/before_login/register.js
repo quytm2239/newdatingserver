@@ -56,11 +56,16 @@ module.exports = function(app, pool, config){
 		}
 
 		// Validate birthday
-		// if (!(utils.chkObj(birthday)) || !(utils.validateBirthday(birthday)))
-		// {
-		// 	res.status(400).send(utils.responseConvention(errcode.code_null_invalid_birthday,[]));
-		// 	return;
-		// }
+		if (!(utils.chkObj(birthday)) || !(utils.validateBirthday(birthday)))
+		{
+			res.status(400).send(utils.responseConvention(errcode.code_null_invalid_birthday,[]));
+			return;
+		} else {
+			if (!(utils.checkAge(birthday))) {
+				res.status(400).send(utils.responseConvention(errcode.code_invalid_age,[]));
+				return;
+			}
+		}
 
 		// Validate address
 		// if (!(utils.chkObj(province)))
@@ -169,7 +174,7 @@ module.exports = function(app, pool, config){
 										+' VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
 									timeout: 1000, // 1s
 									values: [full_name,user_status,avatar,gender,
-										 	insertedAccountId,null,phone,profile_description,
+										 	insertedAccountId,birthday,phone,profile_description,
 											district,province,country,latitude,longitude,
 											null,null,0,0,
 											null,null,0,0,
@@ -292,11 +297,28 @@ module.exports = function(app, pool, config){
 			}
 
 			// Validate birthday
-			// if (utils.chkObj(birthday) == false)
-			// {
-			// 	expressRes.status(400).send(utils.responseConvention(errcode.code_null_invalid_birthday,[]));
-			// 	return;
-			// }
+			if (utils.chkObj(birthday) == false)
+			{
+				expressRes.status(400).send(utils.responseConvention(errcode.code_null_invalid_birthday,[]));
+				return;
+			}
+
+			var today = new Date(birthday);
+			var mm = today.getMonth()+1; //January is 0!
+			var dd = today.getDate();
+			var yyyy = today.getFullYear();
+			if(dd < 10){
+				dd = '0' + dd;
+			}
+			if(mm < 10){
+				mm = '0' + mm;
+			}
+			var formattedBirthday = yyyy + '-' + mm + '-' + dd;
+
+			if (!(utils.checkAge(formattedBirthday))) {
+				res.status(400).send(utils.responseConvention(errcode.code_invalid_age,[]));
+				return;
+			}
 
 			pool.getConnection(function(err, connection) {
 				if (err) {
@@ -371,17 +393,17 @@ module.exports = function(app, pool, config){
 						return;
 					}
 
-					var today = new Date(birthday);
-					var mm = today.getMonth()+1; //January is 0!
-					var dd = today.getDate();
-					var yyyy = today.getFullYear();
-					if(dd < 10){
-						dd = '0' + dd;
-					}
-					if(mm < 10){
-						mm = '0' + mm;
-					}
-					var formattedBirthday = yyyy + '-' + mm + '-' + dd;
+					// var today = new Date(birthday);
+					// var mm = today.getMonth()+1; //January is 0!
+					// var dd = today.getDate();
+					// var yyyy = today.getFullYear();
+					// if(dd < 10){
+					// 	dd = '0' + dd;
+					// }
+					// if(mm < 10){
+					// 	mm = '0' + mm;
+					// }
+					// var formattedBirthday = yyyy + '-' + mm + '-' + dd;
 
 					// PASS CHECKING -> INSERT TO DB
 					// Begin transaction
@@ -426,7 +448,7 @@ module.exports = function(app, pool, config){
 										+' VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
 									timeout: 1000, // 1s
 									values: [full_name,user_status,avatar,gender,
-										 	insertedAccountId,null,phone,profile_description,
+										 	insertedAccountId,formattedBirthday,phone,profile_description,
 											district,province,country,latitude,longitude,
 											null,null,0,0,
 											null,null,0,0,
