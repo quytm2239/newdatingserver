@@ -1655,7 +1655,13 @@ function processSendAPS(list_Notification,profileData,action){
 					connection.release();
 				}
 				if (results.length == 0 || results == null) { // not found record
-					res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+					//res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+					res.status(200).send({
+						status: errcode.code_success,
+						message: errcode.errorMessage(errcode.code_success),
+						data: [],
+						last_rank: []
+					});
 					connection.release();
 				} else { // found record
 					var rankId = needQueryGender ? gender == 0 ? Rank.LIKE_MALE : Rank.LIKE_FEMALE : Rank.LIKE;
@@ -1747,7 +1753,13 @@ function processSendAPS(list_Notification,profileData,action){
 					connection.release();
 				}
 				if (results.length == 0 || results == null) { // not found record
-					res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+					//res.status(200).send(utils.responseConvention(errcode.code_success,[]));
+					res.status(200).send({
+						status: errcode.code_success,
+						message: errcode.errorMessage(errcode.code_success),
+						data: [],
+						last_rank: []
+					});
 					connection.release();
 				} else { // found record
 					var rankId = needQueryGender ? gender == 0 ? Rank.FOLLOWER_MALE : Rank.FOLLOWER_FEMALE : Rank.FOLLOWER;
