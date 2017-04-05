@@ -36,6 +36,7 @@ module.exports={
     code_invalid_min_age: 2032,
     code_invalid_max_age: 2033,
     code_invalid_age: 2034,
+    code_need_birthday: 2035,
 
     errorMessage: function (code) {
     	var mess;
@@ -143,14 +144,18 @@ module.exports={
             mess = "you can not like/dislike your profile.";
             break;
         case module.exports.code_invalid_min_age:
-            mess = "min_age is invalid (>= 18)";
+            mess = "min_age is invalid (>= 18).";
             break;
         case module.exports.code_invalid_max_age:
-            mess = "max_age is invalid (<= 80)";
+            mess = "max_age is invalid (<= 80).";
             break;
         case module.exports.code_invalid_age:
-            mess = "Your age is not valid (18 - 80)";
+            mess = "Your age is not valid to use app (18 - 80).";
             break;
+        case module.exports.code_need_birthday:
+            mess = "No birthday provided, required age to use this app is 18 - 80.";
+            break;
+
         }
     	return mess;
     }

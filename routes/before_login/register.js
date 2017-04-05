@@ -299,7 +299,7 @@ module.exports = function(app, pool, config){
 			// Validate birthday
 			if (utils.chkObj(birthday) == false)
 			{
-				expressRes.status(400).send(utils.responseConvention(errcode.code_null_invalid_birthday,[]));
+				expressRes.status(400).send(utils.responseConvention(errcode.code_need_birthday,[]));
 				return;
 			}
 
