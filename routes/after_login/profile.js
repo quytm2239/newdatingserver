@@ -1643,7 +1643,8 @@ function processSendAPS(list_Notification,profileData,action){
 			}
 			connection.query({
 				sql: 'SELECT * FROM `profile`'
-				+ (needQueryGender ? ' WHERE `gender` = ' + gender : '')
+				+ ' WHERE `total_got_likes` > 0'
+				+ (needQueryGender ? ' AND `gender` = ' + gender : '')
 				+ ' ORDER BY `total_got_likes` DESC, `update_got_like_time` ASC LIMIT 50',
 				timeout: 2000, // 2s
 				values: []
@@ -1735,7 +1736,8 @@ function processSendAPS(list_Notification,profileData,action){
 			}
 			connection.query({
 				sql: 'SELECT * FROM `profile`'
-				+ (needQueryGender ? ' WHERE `gender` = ' + gender : '')
+				+ ' WHERE `total_followers` > 0'
+				+ (needQueryGender ? ' AND `gender` = ' + gender : '')
 				+ ' ORDER BY `total_followers` DESC, `update_follower_time` ASC LIMIT 50',
 				timeout: 2000, // 2s
 				values: []
