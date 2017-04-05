@@ -104,8 +104,9 @@ module.exports = function(app, pool, config){
 		var sqlQuery = 'SELECT * FROM `profile`'
 		+ ' WHERE true'
 		+ (needQueryGender ? ' AND `gender` = ' + gender : '')
-		+ (needQueryMinAge ? ' AND `min_age` = ' + min_age : '')
-		+ (needQueryMaxAge ? ' AND `max_age` = ' + max_age : '')
+		+ (needQueryMinAge ? ' AND TIMESTAMPDIFF(YEAR,birthday,CURDATE()) >= ' + min_age : '')
+		+ (needQueryMaxAge ? ' AND TIMESTAMPDIFF(YEAR,birthday,CURDATE()) <= ' + max_age : '')
+		+ (utils.chkObj(province) ? ' AND `province` = ' + province : '')
 		+ ' ORDER BY created_by DESC'
 		+ ' LIMIT ' + limit + ' OFFSET ' + offset;
 
