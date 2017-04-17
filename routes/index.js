@@ -10,6 +10,7 @@ var check_token = require('./../middleware/check_token');
 module.exports = function(app, pool, config){
 	// before login
 	require(bef_path + '/register')(app, pool, config);
+	require(bef_path + '/loginFB')(app, pool, config);
 	require(bef_path + '/login')(app, pool, config);
 	require(bef_path + '/forgot')(app, pool, config);
 
