@@ -324,7 +324,7 @@ module.exports = function(app, pool, config){
 
 		var sqlQuery = 'SELECT * ,ROUND(' + distanceStr + ',6) '+ 'AS distance'
 		+ ' FROM `profile`'
-		+ ' WHERE ' + distanceStr + ' <= 10 AND `profile_id` != ' + req.decoded['profile']['profile_id']
+		+ ' WHERE ' + distanceStr + ' <= 25000 AND `profile_id` != ' + req.decoded['profile']['profile_id']
 		+ (needQueryGender ? ' AND `gender` = ' + gender : '')
 		+ ' ORDER BY distance ASC'
 		+ ' LIMIT ' + limit + ' OFFSET ' + offset;
