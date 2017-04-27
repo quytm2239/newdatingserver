@@ -167,20 +167,22 @@ module.exports = function(app, pool, config){
 								if (utils.chkObj(results)) {
 									// PROCESS REMOVE FIRST '|' & LAST '|'
 									var followers_str = results[0]['followers_id'];
-									followers_str = followers_str.substr(1, followers_str.length - 2);
-									var arrayFollowersId = followers_str.split('|');
+									if (utils.chkObj(followers_str)) {
+										followers_str = followers_str.substr(1, followers_str.length - 2);
+										var arrayFollowersId = followers_str.split('|');
 
-									var profile_data = results[0];
-									connection.query({
-										sql: 'SELECT * FROM `notification` WHERE `profile_id` in (' + arrayFollowersId + ')',
-										timeout: 1000, // 1s
-										values:[]
-									}, function (error, results, fields) {
-										connection.release();
-										if (utils.chkObj(results)) {
-											processSendAPS(results,profile_data);
-										}
-									});
+										var profile_data = results[0];
+										connection.query({
+											sql: 'SELECT * FROM `notification` WHERE `profile_id` in (' + arrayFollowersId + ')',
+											timeout: 1000, // 1s
+											values:[]
+										}, function (error, results, fields) {
+											connection.release();
+											if (utils.chkObj(results)) {
+												processSendAPS(results,profile_data);
+											}
+										});
+									}
 								}
 							});
 
